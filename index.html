@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentence Compression</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .header { text-align: center; margin-bottom: 30px; padding-top: 20px; }
+        .header h1 { color: white; font-size: 2.5rem; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.85); font-size: 1rem; margin-top: 8px; }
+        .header h1 { color: white; font-size: 2.5rem; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.85); font-size: 1rem; margin-top: 8px; }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto 24px auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        label { font-size: 1rem; font-weight: 600; color: #333; display: block; margin-bottom: 10px; }
+        textarea {
+            width: 100%; padding: 14px; font-size: 1rem;
+            border-radius: 10px; border: 2px solid #e0e0e0;
+            resize: vertical; outline: none; font-family: 'Segoe UI', sans-serif;
+        }
+        button {
+            margin-top: 16px; width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+        }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .error { color: red; margin-top: 8px; font-size: 0.9rem; }
+        .result-title { font-size: 1.3rem; font-weight: 600; color: #333; margin-bottom: 20px; }
+        .row { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+        .result-box {
+            flex: 1; background: #f8f9fa; border-radius: 10px;
+            padding: 16px; border: 2px solid #e0e0e0;
+        }
+        .compressed-box { background: #f0f7ff; border: 2px solid #667eea; }
+        .box-label { font-size: 0.8rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+        .box-text { font-size: 1rem; color: #333; margin-bottom: 8px; line-height: 1.5; }
+        .word-count { font-size: 0.8rem; color: #888; }
+        .arrow { font-size: 2rem; color: #667eea; font-weight: bold; }
+        .stats-row {
+            display: flex; justify-content: space-around;
+            background: #f8f9fa; border-radius: 10px; padding: 20px;
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 1.8rem; font-weight: 700; color: #667eea; }
+        .stat-label { font-size: 0.8rem; color: #888; margin-top: 4px; }
+        .footer { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 10px; }
+        #result-section { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Sentence Compression</h1>
+        <p>Using Syntax-Based Dependency Tree Pruning</p>
+    </div>
+
+    <div class="card">
+        <label>Enter your sentence:</label>
+        <textarea id="input-sentence" rows="4" 
+            placeholder="e.g. The cat that was sitting on the mat looked very hungry yesterday."></textarea>
+        <p class="error" id="error-msg"></p>
+        <button id="compress-btn" onclick="compressSentence()">Compress Sentence</button>
+    </div>
+
+    <div class="card" id="result-section">
+        <h2 class="result-title">Results</h2>
+        <div class="row">
+            <div class="result-box">
+                <p class="box-label">Original</p>
+                <p class="box-text" id="original-text"></p>
+                <p class="word-count" id="original-count"></p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="result-box compressed-box">
+                <p class="box-label">Compressed</p>
+                <p class="box-text" id="compressed-text"></p>
+                <p class="word-count" id="compressed-count"></p>
+            </div>
+        </div>
+        <div class="stats-row">
+            <div class="stat">
+                <p class="stat-value" id="stat-original"></p>
+                <p class="stat-label">Original Words</p>
+            </div>
+            <div class="stat">
+                <p class="stat-value" id="stat-compressed"></p>
+                <p class="stat-label">Compressed Words</p>
+            </div>
+            <div class="stat">
+                <p class="stat-value" id="stat-ratio"></p>
+                <p class="stat-label">Compression Ratio</p>
+            </div>
+            <div class="stat">
+                <p class="stat-value" id="stat-removed"></p>
+                <p class="stat-label">Words Removed</p>
+            </div>
+        </div>
+    </div>
+
+    <p class="footer">Sentence Compression using Syntax | Google Sentence Compression Dataset</p>
+
+    <script>
+        async function compressSentence() {
+            const sentence = document.getElementById('input-sentence').value.trim();
+            const errorMsg = document.getElementById('error-msg');
+            const btn = document.getElementById('compress-btn');
+
+            if (!sentence) {
+                errorMsg.textContent = 'Please enter a sentence!';
+                return;
+            }
+
+            errorMsg.textContent = '';
+            btn.disabled = true;
+            btn.textContent = 'Compressing...';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/compress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sentence: sentence })
+                });
+
+                const data = await response.json();
+
+                document.getElementById('original-text').textContent = data.original;
+                document.getElementById('compressed-text').textContent = data.compressed;
+                document.getElementById('original-count').textContent = data.original_word_count + ' words';
+                document.getElementById('compressed-count').textContent = data.compressed_word_count + ' words';
+                document.getElementById('stat-original').textContent = data.original_word_count;
+                document.getElementById('stat-compressed').textContent = data.compressed_word_count;
+                document.getElementById('stat-ratio').textContent = Math.round(data.compression_ratio * 100) + '%';
+                document.getElementById('stat-removed').textContent = data.original_word_count - data.compressed_word_count;
+
+                document.getElementById('result-section').style.display = 'block';
+
+            } catch (err) {
+                errorMsg.textContent = 'Could not connect to API. Make sure Flask is running!';
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Compress Sentence';
+        }
+    </script>
+</body>
+</html>
