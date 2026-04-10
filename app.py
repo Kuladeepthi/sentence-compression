@@ -6,14 +6,18 @@ import re
 app = Flask(__name__)
 CORS(app)
 
-# Load model once at startup
 nlp = spacy.load("en_core_web_sm")
 
-REMOVE_DEPS = {"relcl", "prep", "advmod", "npadvmod", "advcl", "appos", "pobj", "amod"}
+COMPRESSION_LEVELS = {
+    "light": {"relcl", "appos"},
+    "medium": {"relcl", "prep", "advmod", "npadvmod", "advcl", "appos", "pobj", "amod"},
+    "heavy": {"relcl", "prep", "advmod", "npadvmod", "advcl", "appos", "pobj", "amod", "det", "cc", "conj", "mark"}
+}
 
-def compress_sentence(sentence):
+def compress_sentence(sentence, level="medium"):
     doc = nlp(sentence)
     remove_indices = set()
+    REMOVE_DEPS = COMPRESSION_LEVELS.get(level, COMPRESSION_LEVELS["medium"])
 
     def mark_subtree(token):
         remove_indices.add(token.i)
@@ -42,7 +46,7 @@ def compress_sentence(sentence):
 def home():
     return jsonify({
         "message": "Sentence Compression API is running!",
-        "usage": "POST /compress with JSON body: {sentence: 'your sentence here'}"
+        "usage": "POST /compress with JSON body: {sentence: 'your sentence', level: 'light/medium/heavy'}"
     })
 
 @app.route('/compress', methods=['POST'])
@@ -53,6 +57,7 @@ def compress():
         return jsonify({"error": "Please provide a sentence"}), 400
 
     sentence = data['sentence'].strip()
+    level = data.get('level', 'medium')
 
     if len(sentence) == 0:
         return jsonify({"error": "Sentence cannot be empty"}), 400
@@ -60,7 +65,10 @@ def compress():
     if len(sentence) > 1000:
         return jsonify({"error": "Sentence too long, max 1000 characters"}), 400
 
-    compressed = compress_sentence(sentence)
+    if level not in ["light", "medium", "heavy"]:
+        level = "medium"
+
+    compressed = compress_sentence(sentence, level)
 
     original_words = len(sentence.split())
     compressed_words = len(compressed.split())
@@ -71,7 +79,8 @@ def compress():
         "compressed": compressed,
         "original_word_count": original_words,
         "compressed_word_count": compressed_words,
-        "compression_ratio": ratio
+        "compression_ratio": ratio,
+        "level": level
     })
 
 @app.route('/health', methods=['GET'])
