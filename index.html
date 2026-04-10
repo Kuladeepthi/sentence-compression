@@ -70,9 +70,31 @@
 
     <div class="card">
         <label>Enter your sentence:</label>
-        <textarea id="input-sentence" rows="4" 
+        <textarea id="input-sentence" rows="4"
             placeholder="e.g. The cat that was sitting on the mat looked very hungry yesterday."></textarea>
         <p class="error" id="error-msg"></p>
+
+        <div style="margin-bottom:16px;margin-top:16px">
+            <label style="margin-bottom:8px">Compression Level:</label>
+            <div style="display:flex;gap:10px;margin-top:8px">
+                <button onclick="setLevel('light')" id="btn-light"
+                    style="flex:1;padding:10px;border-radius:8px;border:2px solid #667eea;background:white;color:#667eea;font-weight:600;cursor:pointer;margin-top:0">
+                    🟢 Light
+                </button>
+                <button onclick="setLevel('medium')" id="btn-medium"
+                    style="flex:1;padding:10px;border-radius:8px;border:2px solid #667eea;background:#667eea;color:white;font-weight:600;cursor:pointer;margin-top:0">
+                    🟡 Medium
+                </button>
+                <button onclick="setLevel('heavy')" id="btn-heavy"
+                    style="flex:1;padding:10px;border-radius:8px;border:2px solid #667eea;background:white;color:#667eea;font-weight:600;cursor:pointer;margin-top:0">
+                    🔴 Heavy
+                </button>
+            </div>
+            <p id="level-desc" style="font-size:0.85rem;color:#888;margin-top:8px">
+                Medium: Removes relative clauses, prepositional phrases, adverbs
+            </p>
+        </div>
+
         <button id="compress-btn" onclick="compressSentence()">Compress Sentence</button>
     </div>
 
@@ -124,6 +146,29 @@
     <p class="footer">Sentence Compression using Syntax | Google Sentence Compression Dataset</p>
 
     <script>
+        let currentLevel = 'medium';
+
+        function setLevel(level) {
+            currentLevel = level;
+            const buttons = ['light', 'medium', 'heavy'];
+            const descs = {
+                'light': 'Light: Only removes relative clauses and appositives',
+                'medium': 'Medium: Removes relative clauses, prepositional phrases, adverbs',
+                'heavy': 'Heavy: Aggressive compression, removes most modifiers'
+            };
+            buttons.forEach(b => {
+                const btn = document.getElementById('btn-' + b);
+                if (b === level) {
+                    btn.style.background = '#667eea';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.background = 'white';
+                    btn.style.color = '#667eea';
+                }
+            });
+            document.getElementById('level-desc').textContent = descs[level];
+        }
+
         async function compressSentence() {
             const sentence = document.getElementById('input-sentence').value.trim();
             const errorMsg = document.getElementById('error-msg');
@@ -142,7 +187,7 @@
                 const response = await fetch('https://sentence-compression.onrender.com/compress', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sentence: sentence })
+                    body: JSON.stringify({ sentence: sentence, level: currentLevel })
                 });
 
                 const data = await response.json();
