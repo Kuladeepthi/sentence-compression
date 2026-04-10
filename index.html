@@ -92,7 +92,7 @@
             margin-top: 8px; padding: 6px 14px; border-radius: 6px;
             border: 1px solid #667eea; background: white; color: #667eea;
             font-size: 0.8rem; font-weight: 600; cursor: pointer;
-            width: auto; margin-top: 8px;
+            width: auto;
         }
         .copy-btn:hover { background: #667eea; color: white; }
         .tree-container {
@@ -155,13 +155,11 @@
             <button class="tab" onclick="switchTab('history', this)">History</button>
         </div>
 
-        <!-- Single Sentence Tab -->
         <div id="tab-single" class="tab-content active">
             <label>Enter your sentence:</label>
             <textarea id="input-sentence" rows="4"
                 placeholder="e.g. The young scientist who graduated from Harvard published a groundbreaking paper on climate change."></textarea>
             <p class="error" id="error-msg"></p>
-
             <div style="margin-top:16px">
                 <label>Compression Level:</label>
                 <div class="level-buttons">
@@ -173,18 +171,13 @@
                     Medium: Removes relative clauses and adverbial modifiers
                 </p>
             </div>
-
-            <button class="btn-primary" id="compress-btn" onclick="compressSentence()">
-                Compress Sentence
-            </button>
+            <button class="btn-primary" id="compress-btn" onclick="compressSentence()">Compress Sentence</button>
         </div>
 
-        <!-- Batch Tab -->
         <div id="tab-batch" class="tab-content">
             <label>Enter multiple sentences (one per line):</label>
             <textarea id="batch-input" rows="8"
                 placeholder="The cat that was sitting on the mat looked very hungry.&#10;The scientist who won the Nobel Prize published a new paper.&#10;John, the CEO of the company, announced a new product yesterday."></textarea>
-
             <div style="margin-top:16px">
                 <label>Compression Level:</label>
                 <div class="level-buttons">
@@ -193,19 +186,13 @@
                     <button class="level-btn" onclick="setBatchLevel('heavy')" id="batch-btn-heavy">🔴 Heavy</button>
                 </div>
             </div>
-
             <button class="btn-primary" onclick="batchCompress()" id="batch-compress-btn" style="margin-top:16px">
                 Compress All Sentences
             </button>
-
-            <button class="download-btn" id="download-btn" onclick="downloadCSV()">
-                ⬇ Download CSV
-            </button>
-
+            <button class="download-btn" id="download-btn" onclick="downloadCSV()">⬇ Download CSV</button>
             <div id="batch-results" style="margin-top:16px"></div>
         </div>
 
-        <!-- History Tab -->
         <div id="tab-history" class="tab-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <label style="margin:0">Compression History</label>
@@ -220,12 +207,8 @@
         </div>
     </div>
 
-    <!-- Result Card -->
     <div class="card" id="result-section">
-        <h2 class="result-title">Results
-            <span class="badge" id="level-badge">Medium</span>
-        </h2>
-
+        <h2 class="result-title">Results <span class="badge" id="level-badge">Medium</span></h2>
         <div class="row">
             <div class="result-box">
                 <p class="box-label">Original</p>
@@ -250,8 +233,6 @@
                 <button class="copy-btn" onclick="copyCompressed()">📋 Copy</button>
             </div>
         </div>
-
-        <!-- Stats -->
         <div class="stats-row">
             <div class="stat">
                 <p class="stat-value" id="stat-original"></p>
@@ -270,8 +251,6 @@
                 <p class="stat-label">Words Removed</p>
             </div>
         </div>
-
-        <!-- ROUGE Scores -->
         <div class="rouge-row">
             <div class="rouge-item">
                 <p class="rouge-value" id="rouge1">-</p>
@@ -286,17 +265,13 @@
                 <p class="rouge-label">ROUGE-L</p>
             </div>
         </div>
-
-        <!-- Dependency Tree -->
-        <button class="tree-btn" onclick="showTree()" id="tree-btn">
-            🌳 Show Dependency Parse Tree
-        </button>
-
+        <button class="tree-btn" onclick="showTree()" id="tree-btn">🌳 Show Dependency Parse Tree</button>
         <div id="tree-section" style="display:none;margin-top:16px">
             <div class="tree-info">
-                <strong>How to read this tree:</strong> Each word is a node. Arrows show grammatical relationships between words.
-                The main verb (ROOT) is at the top. Labels like <em>nsubj</em> = subject, <em>relcl</em> = relative clause,
-                <em>advmod</em> = adverb modifier. Our algorithm removes subtrees like relative clauses and adverbs to compress the sentence.
+                <strong>How to read this tree:</strong> Each word is a node. Arrows show grammatical relationships.
+                The main verb (ROOT) is at the top. Labels: <em>nsubj</em> = subject, <em>relcl</em> = relative clause,
+                <em>advmod</em> = adverb, <em>prep</em> = prepositional phrase.
+                Our algorithm removes subtrees like relative clauses and adverbs to compress the sentence while keeping the core meaning.
             </div>
             <div class="tree-container" id="tree-container"></div>
         </div>
@@ -329,7 +304,7 @@
             const descs = {
                 'light': 'Light: Only removes relative clauses and appositives',
                 'medium': 'Medium: Removes relative clauses and adverbial modifiers',
-                'heavy': 'Heavy: Aggressive compression, removes prepositional phrases and adjectives too'
+                'heavy': 'Heavy: Aggressive — removes prepositional phrases and adjectives too'
             };
             document.getElementById('level-desc').textContent = descs[level];
         }
@@ -347,11 +322,7 @@
             const errorMsg = document.getElementById('error-msg');
             const btn = document.getElementById('compress-btn');
 
-            if (!sentence) {
-                errorMsg.textContent = 'Please enter a sentence!';
-                return;
-            }
-
+            if (!sentence) { errorMsg.textContent = 'Please enter a sentence!'; return; }
             errorMsg.textContent = '';
             btn.disabled = true;
             btn.textContent = 'Compressing...';
@@ -364,12 +335,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sentence, level: currentLevel })
                 });
-
                 const data = await response.json();
                 currentSentence = data.original;
                 currentCompressed = data.compressed;
 
-                // Word highlighting
                 const originalWords = data.original.split(' ');
                 const compressedWords = data.compressed.toLowerCase().split(' ');
                 const highlighted = originalWords.map(word => {
@@ -398,11 +367,10 @@
 
                 document.getElementById('result-section').style.display = 'block';
                 document.getElementById('tree-btn').textContent = '🌳 Show Dependency Parse Tree';
-
                 addToHistory(data.original, data.compressed, currentLevel, data.compression_ratio);
 
             } catch (err) {
-                errorMsg.textContent = 'Could not connect to API. Please wait 30 seconds and try again (free server waking up)!';
+                errorMsg.textContent = 'Could not connect to API. Please wait 30 seconds and try again!';
             }
 
             btn.disabled = false;
@@ -428,7 +396,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sentence: currentSentence, level: currentLevel })
                 });
-
                 const data = await response.json();
                 document.getElementById('tree-container').innerHTML = data.svg;
                 treeSection.style.display = 'block';
@@ -436,14 +403,12 @@
             } catch (err) {
                 alert('Could not load tree. Try again!');
             }
-
             btn.disabled = false;
         }
 
         async function batchCompress() {
             const input = document.getElementById('batch-input').value.trim();
             const btn = document.getElementById('batch-compress-btn');
-
             if (!input) { alert('Please enter sentences!'); return; }
 
             const sentences = input.split('\n').filter(s => s.trim());
@@ -456,7 +421,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sentences, level: batchLevel })
                 });
-
                 const data = await response.json();
                 batchResults = data.results;
 
@@ -469,14 +433,11 @@
                             <p class="batch-meta">${r.original_words} → ${r.compressed_words} words | Ratio: ${Math.round(r.ratio * 100)}% | ROUGE-1: ${r.rouge1}</p>
                         </div>`;
                 });
-
                 document.getElementById('batch-results').innerHTML = html;
                 document.getElementById('download-btn').style.display = 'inline-block';
-
             } catch (err) {
                 alert('Could not connect to API. Please wait and try again!');
             }
-
             btn.disabled = false;
             btn.textContent = 'Compress All Sentences';
         }
@@ -502,18 +463,14 @@
         }
 
         function addToHistory(original, compressed, level, ratio) {
-            compressionHistory.unshift({
-                original, compressed, level, ratio,
-                time: new Date().toLocaleTimeString()
-            });
+            compressionHistory.unshift({ original, compressed, level, ratio, time: new Date().toLocaleTimeString() });
             if (compressionHistory.length > 20) compressionHistory.pop();
             renderHistory();
         }
 
         function renderHistory() {
             if (compressionHistory.length === 0) {
-                document.getElementById('history-list').innerHTML =
-                    '<p style="color:#aaa;font-size:0.9rem">No history yet.</p>';
+                document.getElementById('history-list').innerHTML = '<p style="color:#aaa;font-size:0.9rem">No history yet.</p>';
                 return;
             }
             let html = '';

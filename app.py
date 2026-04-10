@@ -30,13 +30,11 @@ def compress_sentence(sentence, level="medium"):
     if not root:
         return sentence
 
-    # Protect only direct ROOT children that are subject/object/aux
     main_protected = {root.i}
     for child in root.children:
         if child.dep_ in {"nsubj", "nsubjpass", "dobj", "aux", "auxpass", "neg"}:
             main_protected.add(child.i)
 
-    # Define what to remove per level
     if level == "light":
         removable_sets = [{"relcl", "appos", "acl"}]
     elif level == "medium":
@@ -44,7 +42,7 @@ def compress_sentence(sentence, level="medium"):
             {"relcl", "appos", "acl"},
             {"npadvmod", "advmod", "advcl"}
         ]
-    else:  # heavy
+    else:
         removable_sets = [
             {"relcl", "appos", "acl"},
             {"npadvmod", "advmod", "advcl"},
@@ -52,7 +50,6 @@ def compress_sentence(sentence, level="medium"):
         ]
 
     remove_indices = set()
-
     for removable in removable_sets:
         for token in doc:
             if token.i in main_protected:
@@ -76,7 +73,6 @@ def compress_sentence(sentence, level="medium"):
 
 def build_sentence(doc, remove_indices):
     kept = [t for t in doc if t.i not in remove_indices]
-
     if len(kept) < 2:
         return " ".join([t.text for t in doc])
 
@@ -90,19 +86,18 @@ def build_sentence(doc, remove_indices):
             else:
                 result += " " + token.text
 
-    # Clean up spacing and punctuation
     result = re.sub(r'\s+', ' ', result)
     result = re.sub(r'\s([.,;:!?])', r'\1', result)
+    result = re.sub(r',\s+([a-z])', lambda m: ' ' + m.group(1), result)
     result = re.sub(r',+', ',', result)
     result = re.sub(r',\s*\.', '.', result)
     result = re.sub(r'--\s*--', '', result)
     result = re.sub(r'\s*--\s*', ' ', result)
-
-    # Fix article grammar (an → a before consonants, a → an before vowels)
     result = re.sub(r'\ban ([bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ])', r'a \1', result)
     result = re.sub(r'\ba ([aeiouAEIOU])', r'an \1', result)
-
+    result = re.sub(r'\s([.,;:!?])', r'\1', result)
     result = result.strip(" ,")
+
     if result:
         result = result[0].upper() + result[1:]
     if result and result[-1] not in '.!?':
@@ -134,24 +129,19 @@ def compress():
     data = request.get_json()
     if not data or 'sentence' not in data:
         return jsonify({"error": "Please provide a sentence"}), 400
-
     sentence = data['sentence'].strip()
     level = data.get('level', 'medium')
-
     if len(sentence) == 0:
         return jsonify({"error": "Sentence cannot be empty"}), 400
     if len(sentence) > 1000:
         return jsonify({"error": "Sentence too long"}), 400
     if level not in ["light", "medium", "heavy"]:
         level = "medium"
-
     compressed = compress_sentence(sentence, level)
     rouge = get_rouge_scores(sentence, compressed)
-
     original_words = len(sentence.split())
     compressed_words = len(compressed.split())
     ratio = round(compressed_words / original_words, 2)
-
     return jsonify({
         "original": sentence,
         "compressed": compressed,
@@ -167,11 +157,9 @@ def batch():
     data = request.get_json()
     if not data or 'sentences' not in data:
         return jsonify({"error": "Please provide sentences"}), 400
-
     sentences = data['sentences']
     level = data.get('level', 'medium')
     results = []
-
     for sentence in sentences:
         sentence = sentence.strip()
         if not sentence:
@@ -186,7 +174,6 @@ def batch():
             "ratio": round(len(compressed.split()) / len(sentence.split()), 2),
             "rouge1": rouge["rouge1"]
         })
-
     return jsonify({"results": results, "total": len(results)})
 
 @app.route('/tree', methods=['POST'])
@@ -194,13 +181,11 @@ def tree():
     data = request.get_json()
     if not data or 'sentence' not in data:
         return jsonify({"error": "Please provide a sentence"}), 400
-
     sentence = data['sentence'].strip()
     level = data.get('level', 'medium')
     doc = nlp(sentence)
     compressed = compress_sentence(sentence, level)
     compressed_words = set(compressed.lower().replace('.', '').split())
-
     options = {
         "compact": True,
         "bg": "#f8f9fa",
@@ -210,10 +195,8 @@ def tree():
         "arrow_stroke": 2,
         "arrow_width": 8
     }
-
     svg = displacy.render(doc, style="dep", options=options, page=False)
     removed_words = [t.text for t in doc if t.text.lower() not in compressed_words and not t.is_punct]
-
     return jsonify({
         "svg": svg,
         "removed_words": removed_words,
