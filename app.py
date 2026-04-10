@@ -8,90 +8,96 @@ CORS(app)
 
 nlp = spacy.load("en_core_web_sm")
 
-# Carefully tuned compression levels
-# light  - only removes extra descriptive clauses
-# medium - removes clauses + time/place adverbials
-# heavy  - removes everything except core subject+verb+object
-COMPRESSION_LEVELS = {
-    "light": {
-        "relcl",      # relative clause (who graduated from Harvard)
-        "appos",      # apposition (John, the CEO, ...)
-        "acl",        # clausal modifier
-    },
-    "medium": {
-        "relcl",      # relative clause
-        "appos",      # apposition
-        "acl",        # clausal modifier
-        "advcl",      # adverbial clause (because, although...)
-        "npadvmod",   # noun phrase adverbial (last year)
-        "advmod",     # adverb modifier (recently, quickly)
-    },
-    "heavy": {
-        "relcl",      # relative clause
-        "appos",      # apposition
-        "acl",        # clausal modifier
-        "advcl",      # adverbial clause
-        "npadvmod",   # noun phrase adverbial
-        "advmod",     # adverb modifier
-        "prep",       # prepositional phrase (on climate change)
-        "pobj",       # object of preposition
-        "amod",       # adjectival modifier (young, prestigious)
-        "det",        # determiner (the, a)
-        "cc",         # coordinating conjunction (and, but)
-        "conj",       # conjunct
-        "mark",       # marker (that, which)
-        "quantmod",   # quantifier modifier
-        "nummod",     # numeric modifier
-    }
-}
+def get_subtree_indices(token):
+    """Get all indices in a token's subtree"""
+    indices = set()
+    indices.add(token.i)
+    for child in token.children:
+        indices.update(get_subtree_indices(child))
+    return indices
+
+def is_safe_to_remove(token, doc):
+    """Check if removing this token's subtree is safe"""
+    # Never remove ROOT
+    if token.dep_ == "ROOT":
+        return False
+    # Never remove main subject
+    if token.dep_ in {"nsubj", "nsubjpass"}:
+        return False
+    # Never remove main object
+    if token.dep_ == "dobj":
+        return False
+    # Never remove auxiliary verbs of ROOT
+    if token.dep_ in {"aux", "auxpass"} and token.head.dep_ == "ROOT":
+        return False
+    # Never remove negation
+    if token.dep_ == "neg":
+        return False
+    return True
 
 def compress_sentence(sentence, level="medium"):
     doc = nlp(sentence)
     remove_indices = set()
-    REMOVE_DEPS = COMPRESSION_LEVELS.get(level, COMPRESSION_LEVELS["medium"])
 
-    def mark_subtree(token):
-        remove_indices.add(token.i)
-        for child in token.children:
-            mark_subtree(child)
+    # Define what to remove per level
+    if level == "light":
+        # Only remove clearly optional clauses
+        removable = {"relcl", "appos"}
+    elif level == "medium":
+        # Remove optional clauses + adverbial modifiers
+        removable = {"relcl", "appos", "advcl", "advmod", "npadvmod", "acl"}
+    else:  # heavy
+        # Remove everything optional including prepositional phrases
+        removable = {"relcl", "appos", "advcl", "advmod", "npadvmod",
+                    "acl", "prep", "amod", "cc", "conj", "mark", "quantmod"}
 
     for token in doc:
-        if token.dep_ in REMOVE_DEPS:
-            # Never remove ROOT token (main verb)
-            if token.dep_ == "ROOT":
-                continue
-            # Never remove subject (nsubj, nsubjpass)
-            if token.dep_ in {"nsubj", "nsubjpass"}:
-                continue
-            # Never remove direct object (dobj)
-            if token.dep_ == "dobj":
-                continue
-            mark_subtree(token)
+        if token.dep_ in removable and is_safe_to_remove(token, doc):
+            subtree = get_subtree_indices(token)
+            # Extra safety - make sure we are not removing subject or object
+            safe = True
+            for idx in subtree:
+                t = doc[idx]
+                if t.dep_ in {"nsubj", "nsubjpass", "dobj", "ROOT"}:
+                    safe = False
+                    break
+            if safe:
+                remove_indices.update(subtree)
 
-    # Always keep ROOT, nsubj, dobj tokens
-    for token in doc:
-        if token.dep_ in {"ROOT", "nsubj", "nsubjpass", "dobj"}:
-            remove_indices.discard(token.i)
+    # Build compressed sentence keeping order
+    kept_tokens = [token for token in doc if token.i not in remove_indices]
 
-    compressed = " ".join([token.text for token in doc if token.i not in remove_indices])
+    if len(kept_tokens) < 2:
+        return sentence  # Safety: return original if too much removed
 
-    # Clean up punctuation and spacing
+    # Reconstruct with proper spacing
+    compressed = ""
+    for i, token in enumerate(kept_tokens):
+        if i == 0:
+            compressed = token.text
+        else:
+            # Add space before token unless it's punctuation
+            if token.is_punct:
+                compressed += token.text
+            else:
+                compressed += " " + token.text
+
+    # Clean up
     compressed = re.sub(r'\s+', ' ', compressed)
     compressed = re.sub(r'\s([.,;:!?])', r'\1', compressed)
     compressed = re.sub(r',+', ',', compressed)
     compressed = re.sub(r',\s*\.', '.', compressed)
-    compressed = re.sub(r'\(\s*\)', '', compressed)
     compressed = re.sub(r'--\s*--', '', compressed)
-    compressed = re.sub(r'\s*-\s*-\s*', ' ', compressed)
+    compressed = re.sub(r'\s*--\s*', ' ', compressed)
     compressed = compressed.strip(" ,")
 
-    # Make sure it ends with a period
-    if compressed and not compressed[-1] in '.!?':
-        compressed += '.'
+    # Capitalize first letter
+    if compressed:
+        compressed = compressed[0].upper() + compressed[1:]
 
-    # If compression removed too much (less than 2 words), return original
-    if len(compressed.split()) < 2:
-        return sentence
+    # End with period
+    if compressed and compressed[-1] not in '.!?':
+        compressed += '.'
 
     return compressed
 
