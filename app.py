@@ -18,49 +18,80 @@ def get_subtree_indices(token):
         indices.update(get_subtree_indices(child))
     return indices
 
+def get_root(doc):
+    for token in doc:
+        if token.dep_ == "ROOT":
+            return token
+    return None
+
 def compress_sentence(sentence, level="medium", target_words=None):
     doc = nlp(sentence)
-    
-    # Priority order of what to remove (from safest to most aggressive)
-    removal_priority = [
-        {"relcl", "appos", "acl"},                          # Level 1 - safest
-        {"npadvmod", "advmod", "advcl"},                     # Level 2
-        {"prep", "mark", "cc", "conj"},                      # Level 3
-        {"amod", "compound", "det", "quantmod", "nummod"},   # Level 4 - most aggressive
-    ]
+    root = get_root(doc)
+    if not root:
+        return sentence
 
+    # Get main subject and object indices (only direct children of ROOT)
+    main_protected = {root.i}
+    for child in root.children:
+        if child.dep_ in {"nsubj", "nsubjpass"}:
+            main_protected.add(child.i)
+        if child.dep_ in {"dobj"}:
+            main_protected.add(child.i)
+        if child.dep_ in {"aux", "auxpass", "neg"}:
+            main_protected.add(child.i)
+
+    # Define removal sets per level
     if level == "light":
-        removable_sets = removal_priority[:1]
+        removable_sets = [{"relcl", "appos", "acl"}]
     elif level == "medium":
-        removable_sets = removal_priority[:2]
-    else:
-        removable_sets = removal_priority[:3]
+        removable_sets = [
+            {"relcl", "appos", "acl"},
+            {"npadvmod", "advmod", "advcl"}
+        ]
+    else:  # heavy
+        removable_sets = [
+            {"relcl", "appos", "acl"},
+            {"npadvmod", "advmod", "advcl"},
+            {"prep", "amod", "cc", "conj", "mark"}
+        ]
 
-    # If target_words specified, remove progressively
     if target_words:
-        removable_sets = removal_priority
+        removable_sets = [
+            {"relcl", "appos", "acl"},
+            {"npadvmod", "advmod", "advcl"},
+            {"prep", "amod", "cc", "conj", "mark"},
+            {"det", "compound", "quantmod", "nummod"}
+        ]
 
-    protected = {"ROOT", "nsubj", "nsubjpass", "dobj", "aux", "auxpass", "neg"}
     remove_indices = set()
 
     for removable in removable_sets:
         for token in doc:
-            if token.dep_ in protected:
+            # Skip if this token is in main protected set
+            if token.i in main_protected:
                 continue
+            # Skip ROOT
+            if token.dep_ == "ROOT":
+                continue
+
             if token.dep_ in removable:
                 subtree = get_subtree_indices(token)
+                # Only skip if subtree contains ROOT or main subject
                 safe = True
                 for idx in subtree:
-                    if doc[idx].dep_ in protected:
+                    if idx in main_protected:
+                        safe = False
+                        break
+                    if doc[idx].dep_ == "ROOT":
                         safe = False
                         break
                 if safe:
                     remove_indices.update(subtree)
 
-        # Check if target reached
+        # Check target word count
         if target_words:
             kept = [t for t in doc if t.i not in remove_indices and not t.is_punct]
-            if len(kept) <= target_words:
+            if len(kept) <= int(target_words):
                 break
 
     return build_sentence(doc, remove_indices)
@@ -104,44 +135,6 @@ def get_rouge_scores(original, compressed):
         "rougeL": round(scores['rougeL'].fmeasure, 4)
     }
 
-def get_dependency_tree(sentence, remove_indices_words):
-    doc = nlp(sentence)
-    remove_set = set(remove_indices_words)
-
-    # Build custom SVG using displacy data
-    words = []
-    arcs = []
-
-    for token in doc:
-        color = "#ff6b6b" if token.text in remove_set else "#51cf66"
-        words.append({
-            "text": token.text,
-            "tag": token.dep_,
-            "color": color
-        })
-
-    for token in doc:
-        if token.dep_ != "ROOT":
-            start = min(token.i, token.head.i)
-            end = max(token.i, token.head.i)
-            direction = "left" if token.i < token.head.i else "right"
-            arcs.append({
-                "start": start,
-                "end": end,
-                "label": token.dep_,
-                "dir": direction
-            })
-
-    options = {
-        "compact": True,
-        "bg": "#ffffff",
-        "color": "#333333",
-        "font": "Arial"
-    }
-
-    svg = displacy.render(doc, style="dep", options=options, page=False)
-    return svg
-
 @app.route('/')
 def home():
     return jsonify({
@@ -156,7 +149,6 @@ def home():
 @app.route('/compress', methods=['POST'])
 def compress():
     data = request.get_json()
-
     if not data or 'sentence' not in data:
         return jsonify({"error": "Please provide a sentence"}), 400
 
@@ -170,12 +162,6 @@ def compress():
         return jsonify({"error": "Sentence too long"}), 400
     if level not in ["light", "medium", "heavy"]:
         level = "medium"
-
-    if target_words:
-        try:
-            target_words = int(target_words)
-        except:
-            target_words = None
 
     compressed = compress_sentence(sentence, level, target_words)
     rouge = get_rouge_scores(sentence, compressed)
@@ -197,7 +183,6 @@ def compress():
 @app.route('/batch', methods=['POST'])
 def batch():
     data = request.get_json()
-
     if not data or 'sentences' not in data:
         return jsonify({"error": "Please provide sentences array"}), 400
 
@@ -225,7 +210,6 @@ def batch():
 @app.route('/tree', methods=['POST'])
 def tree():
     data = request.get_json()
-
     if not data or 'sentence' not in data:
         return jsonify({"error": "Please provide a sentence"}), 400
 
@@ -236,22 +220,23 @@ def tree():
     compressed = compress_sentence(sentence, level)
     compressed_words = set(compressed.lower().replace('.', '').split())
 
-    removed_words = []
-    for token in doc:
-        if token.text.lower() not in compressed_words and not token.is_punct:
-            removed_words.append(token.text)
-
     options = {
-        "compact": False,
+        "compact": True,
         "bg": "#f8f9fa",
         "color": "#333333",
         "font": "Arial",
-        "distance": 120,
+        "distance": 100,
         "arrow_stroke": 2,
         "arrow_width": 8
     }
 
     svg = displacy.render(doc, style="dep", options=options, page=False)
+    
+    removed_words = []
+    for token in doc:
+        if token.text.lower() not in compressed_words and not token.is_punct:
+            removed_words.append(token.text)
+
     return jsonify({
         "svg": svg,
         "removed_words": removed_words,
