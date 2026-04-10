@@ -15,8 +15,6 @@
         .header { text-align: center; margin-bottom: 30px; padding-top: 20px; }
         .header h1 { color: white; font-size: 2.5rem; font-weight: 700; }
         .header p { color: rgba(255,255,255,0.85); font-size: 1rem; margin-top: 8px; }
-        .header h1 { color: white; font-size: 2.5rem; font-weight: 700; }
-        .header p { color: rgba(255,255,255,0.85); font-size: 1rem; margin-top: 8px; }
         .card {
             background: white;
             border-radius: 16px;
@@ -47,7 +45,7 @@
         }
         .compressed-box { background: #f0f7ff; border: 2px solid #667eea; }
         .box-label { font-size: 0.8rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 8px; }
-        .box-text { font-size: 1rem; color: #333; margin-bottom: 8px; line-height: 1.5; }
+        .box-text { font-size: 1rem; color: #333; margin-bottom: 8px; line-height: 1.8; }
         .word-count { font-size: 0.8rem; color: #888; }
         .arrow { font-size: 2rem; color: #667eea; font-weight: bold; }
         .stats-row {
@@ -59,6 +57,9 @@
         .stat-label { font-size: 0.8rem; color: #888; margin-top: 4px; }
         .footer { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 10px; }
         #result-section { display: none; }
+        .legend { margin-top: 10px; display: flex; gap: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #555; }
+        .legend-box { width: 14px; height: 14px; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -82,6 +83,16 @@
                 <p class="box-label">Original</p>
                 <p class="box-text" id="original-text"></p>
                 <p class="word-count" id="original-count"></p>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:#ccffcc;border:1px solid #88cc88"></div>
+                        <span>Kept</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:#ffcccc;border:1px solid #cc8888"></div>
+                        <span>Removed</span>
+                    </div>
+                </div>
             </div>
             <div class="arrow">→</div>
             <div class="result-box compressed-box">
@@ -128,7 +139,7 @@
             btn.textContent = 'Compressing...';
 
             try {
-                const response = await fetch('https://sentence-compression.onrender.com/compress', {
+                const response = await fetch('http://127.0.0.1:5000/compress', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sentence: sentence })
@@ -136,7 +147,18 @@
 
                 const data = await response.json();
 
-                document.getElementById('original-text').textContent = data.original;
+                // Word highlighting
+                const originalWords = data.original.split(' ');
+                const compressedWords = data.compressed.toLowerCase().split(' ');
+                const highlighted = originalWords.map(word => {
+                    const clean = word.toLowerCase().replace(/[.,!?;:]/g, '');
+                    const kept = compressedWords.some(w => w.replace(/[.,!?;:]/g, '') === clean);
+                    const bg = kept ? '#ccffcc' : '#ffcccc';
+                    const border = kept ? '#88cc88' : '#cc8888';
+                    return `<span style="background:${bg};border:1px solid ${border};padding:2px 5px;border-radius:4px;margin:2px;display:inline-block">${word}</span>`;
+                }).join(' ');
+
+                document.getElementById('original-text').innerHTML = highlighted;
                 document.getElementById('compressed-text').textContent = data.compressed;
                 document.getElementById('original-count').textContent = data.original_word_count + ' words';
                 document.getElementById('compressed-count').textContent = data.compressed_word_count + ' words';
