@@ -426,7 +426,9 @@
                 document.getElementById('stat-compressed').textContent = data.compressed_word_count;
                 document.getElementById('stat-ratio').textContent = Math.round(data.compression_ratio * 100) + '%';
                 document.getElementById('stat-removed').textContent = data.original_word_count - data.compressed_word_count;
-                document.getElementById('level-badge').textContent = currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
+                const useTarget = document.getElementById('use-target').checked;
+                const targetVal = document.getElementById('target-words').value;
+                document.getElementById('level-badge').textContent = useTarget ? `Target: ${targetVal} words` : currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
 
                 // ROUGE scores
                 if (data.rouge_scores) {

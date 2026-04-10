@@ -93,6 +93,19 @@ def compress_sentence(sentence, level="medium", target_words=None):
             kept = [t for t in doc if t.i not in remove_indices and not t.is_punct]
             if len(kept) <= int(target_words):
                 break
+            # If still too many words after all removals, keep removing
+            if removable_sets.index(removable) == len(removable_sets) - 1:
+                # Last resort - trim from end keeping subject+verb+object
+                kept_final = [t for t in doc if t.i not in remove_indices]
+                while len([t for t in kept_final if not t.is_punct]) > int(target_words):
+                    # Remove last non-punct token that's not protected
+                    for t in reversed(kept_final):
+                        if not t.is_punct and t.i not in main_protected:
+                            remove_indices.add(t.i)
+                            kept_final = [tok for tok in doc if tok.i not in remove_indices]
+                            break
+                    else:
+                        break
 
     return build_sentence(doc, remove_indices)
 
