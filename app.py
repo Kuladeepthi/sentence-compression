@@ -24,23 +24,19 @@ def get_root(doc):
             return token
     return None
 
-def compress_sentence(sentence, level="medium", target_words=None):
+def compress_sentence(sentence, level="medium"):
     doc = nlp(sentence)
     root = get_root(doc)
     if not root:
         return sentence
 
-    # Get main subject and object indices (only direct children of ROOT)
+    # Protect only direct ROOT children that are subject/object/aux
     main_protected = {root.i}
     for child in root.children:
-        if child.dep_ in {"nsubj", "nsubjpass"}:
-            main_protected.add(child.i)
-        if child.dep_ in {"dobj"}:
-            main_protected.add(child.i)
-        if child.dep_ in {"aux", "auxpass", "neg"}:
+        if child.dep_ in {"nsubj", "nsubjpass", "dobj", "aux", "auxpass", "neg"}:
             main_protected.add(child.i)
 
-    # Define removal sets per level
+    # Define what to remove per level
     if level == "light":
         removable_sets = [{"relcl", "appos", "acl"}]
     elif level == "medium":
@@ -55,28 +51,16 @@ def compress_sentence(sentence, level="medium", target_words=None):
             {"prep", "amod", "cc", "conj", "mark"}
         ]
 
-    if target_words:
-        removable_sets = [
-            {"relcl", "appos", "acl"},
-            {"npadvmod", "advmod", "advcl"},
-            {"prep", "amod", "cc", "conj", "mark"},
-            {"det", "compound", "quantmod", "nummod"}
-        ]
-
     remove_indices = set()
 
     for removable in removable_sets:
         for token in doc:
-            # Skip if this token is in main protected set
             if token.i in main_protected:
                 continue
-            # Skip ROOT
             if token.dep_ == "ROOT":
                 continue
-
             if token.dep_ in removable:
                 subtree = get_subtree_indices(token)
-                # Only skip if subtree contains ROOT or main subject
                 safe = True
                 for idx in subtree:
                     if idx in main_protected:
@@ -87,25 +71,6 @@ def compress_sentence(sentence, level="medium", target_words=None):
                         break
                 if safe:
                     remove_indices.update(subtree)
-
-        # Check target word count
-        if target_words:
-            kept = [t for t in doc if t.i not in remove_indices and not t.is_punct]
-            if len(kept) <= int(target_words):
-                break
-            # If still too many words after all removals, keep removing
-            if removable_sets.index(removable) == len(removable_sets) - 1:
-                # Last resort - trim from end keeping subject+verb+object
-                kept_final = [t for t in doc if t.i not in remove_indices]
-                while len([t for t in kept_final if not t.is_punct]) > int(target_words):
-                    # Remove last non-punct token that's not protected
-                    for t in reversed(kept_final):
-                        if not t.is_punct and t.i not in main_protected:
-                            remove_indices.add(t.i)
-                            kept_final = [tok for tok in doc if tok.i not in remove_indices]
-                            break
-                    else:
-                        break
 
     return build_sentence(doc, remove_indices)
 
@@ -125,14 +90,19 @@ def build_sentence(doc, remove_indices):
             else:
                 result += " " + token.text
 
+    # Clean up spacing and punctuation
     result = re.sub(r'\s+', ' ', result)
     result = re.sub(r'\s([.,;:!?])', r'\1', result)
     result = re.sub(r',+', ',', result)
     result = re.sub(r',\s*\.', '.', result)
     result = re.sub(r'--\s*--', '', result)
     result = re.sub(r'\s*--\s*', ' ', result)
-    result = result.strip(" ,")
 
+    # Fix article grammar (an → a before consonants, a → an before vowels)
+    result = re.sub(r'\ban ([bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ])', r'a \1', result)
+    result = re.sub(r'\ba ([aeiouAEIOU])', r'an \1', result)
+
+    result = result.strip(" ,")
     if result:
         result = result[0].upper() + result[1:]
     if result and result[-1] not in '.!?':
@@ -167,7 +137,6 @@ def compress():
 
     sentence = data['sentence'].strip()
     level = data.get('level', 'medium')
-    target_words = data.get('target_words', None)
 
     if len(sentence) == 0:
         return jsonify({"error": "Sentence cannot be empty"}), 400
@@ -176,7 +145,7 @@ def compress():
     if level not in ["light", "medium", "heavy"]:
         level = "medium"
 
-    compressed = compress_sentence(sentence, level, target_words)
+    compressed = compress_sentence(sentence, level)
     rouge = get_rouge_scores(sentence, compressed)
 
     original_words = len(sentence.split())
@@ -197,7 +166,7 @@ def compress():
 def batch():
     data = request.get_json()
     if not data or 'sentences' not in data:
-        return jsonify({"error": "Please provide sentences array"}), 400
+        return jsonify({"error": "Please provide sentences"}), 400
 
     sentences = data['sentences']
     level = data.get('level', 'medium')
@@ -228,7 +197,6 @@ def tree():
 
     sentence = data['sentence'].strip()
     level = data.get('level', 'medium')
-
     doc = nlp(sentence)
     compressed = compress_sentence(sentence, level)
     compressed_words = set(compressed.lower().replace('.', '').split())
@@ -244,11 +212,7 @@ def tree():
     }
 
     svg = displacy.render(doc, style="dep", options=options, page=False)
-    
-    removed_words = []
-    for token in doc:
-        if token.text.lower() not in compressed_words and not token.is_punct:
-            removed_words.append(token.text)
+    removed_words = [t.text for t in doc if t.text.lower() not in compressed_words and not t.is_punct]
 
     return jsonify({
         "svg": svg,

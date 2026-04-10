@@ -16,11 +16,8 @@
         .header h1 { color: white; font-size: 2.5rem; font-weight: 700; }
         .header p { color: rgba(255,255,255,0.85); font-size: 1rem; margin-top: 8px; }
         .card {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 900px;
-            margin: 0 auto 24px auto;
+            background: white; border-radius: 16px; padding: 30px;
+            max-width: 900px; margin: 0 auto 24px auto;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
         }
         label { font-size: 1rem; font-weight: 600; color: #333; display: block; margin-bottom: 10px; }
@@ -35,14 +32,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; border: none; border-radius: 10px;
             font-size: 1rem; font-weight: 600; cursor: pointer;
-            transition: opacity 0.2s;
         }
         .btn-primary:hover { opacity: 0.9; }
         .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
         .error { color: red; margin-top: 8px; font-size: 0.9rem; }
         .tabs {
             display: flex; gap: 8px; margin-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0; padding-bottom: 0;
+            border-bottom: 2px solid #e0e0e0;
         }
         .tab {
             padding: 10px 20px; border: none; background: none;
@@ -104,7 +100,11 @@
             border-radius: 10px; padding: 16px;
             border: 2px solid #e0e0e0; margin-top: 16px;
         }
-        .tree-container svg { max-width: 100%; }
+        .tree-info {
+            background: #fff3cd; border: 1px solid #ffc107;
+            border-radius: 8px; padding: 12px; margin-bottom: 12px;
+            font-size: 0.85rem; color: #555; line-height: 1.5;
+        }
         .history-item {
             padding: 12px; background: #f8f9fa; border-radius: 8px;
             border: 1px solid #e0e0e0; margin-bottom: 8px;
@@ -112,28 +112,13 @@
         .history-original { font-size: 0.85rem; color: #888; margin-bottom: 4px; }
         .history-compressed { font-size: 0.95rem; color: #333; font-weight: 500; }
         .history-meta { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
-        .target-input {
-            display: flex; gap: 10px; align-items: center; margin-top: 12px;
-        }
-        .target-input input {
-            width: 80px; padding: 8px 12px; border-radius: 8px;
-            border: 2px solid #e0e0e0; font-size: 1rem; outline: none;
-            text-align: center;
-        }
-        .target-input input:focus { border-color: #667eea; }
-        .target-toggle {
-            display: flex; align-items: center; gap: 8px;
-            margin-top: 12px; font-size: 0.9rem; color: #555;
-        }
         .badge {
             display: inline-block; padding: 2px 8px; border-radius: 12px;
             font-size: 0.75rem; font-weight: 600; margin-left: 8px;
+            background: #e7f5ff; color: #1971c2;
         }
-        .badge-green { background: #d3f9d8; color: #2f9e44; }
-        .badge-blue { background: #e7f5ff; color: #1971c2; }
         .footer { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 10px; }
         #result-section { display: none; }
-        #tree-section { display: none; }
         .batch-result {
             padding: 12px; background: #f8f9fa; border-radius: 8px;
             border: 1px solid #e0e0e0; margin-bottom: 8px;
@@ -148,20 +133,26 @@
             width: auto; display: none;
         }
         .download-btn:hover { background: #667eea; color: white; }
+        .tree-btn {
+            margin-top: 16px; width: 100%; padding: 12px;
+            background: white; color: #667eea;
+            border: 2px solid #667eea; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+        }
+        .tree-btn:hover { background: #667eea; color: white; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Sentence Compression</h1>
-        <p>Using Syntax-Based Dependency Tree Pruning | Google Sentence Compression Dataset</p>
+        <p>Using Syntax-Based Dependency Tree Pruning | Google Sentence Compression Dataset (Filippova & Altun, 2013)</p>
     </div>
 
-    <!-- Main Input Card -->
     <div class="card">
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('single')">Single Sentence</button>
-            <button class="tab" onclick="switchTab('batch')">Batch Compression</button>
-            <button class="tab" onclick="switchTab('history')">History</button>
+            <button class="tab active" onclick="switchTab('single', this)">Single Sentence</button>
+            <button class="tab" onclick="switchTab('batch', this)">Batch Compression</button>
+            <button class="tab" onclick="switchTab('history', this)">History</button>
         </div>
 
         <!-- Single Sentence Tab -->
@@ -171,7 +162,6 @@
                 placeholder="e.g. The young scientist who graduated from Harvard published a groundbreaking paper on climate change."></textarea>
             <p class="error" id="error-msg"></p>
 
-            <!-- Compression Level -->
             <div style="margin-top:16px">
                 <label>Compression Level:</label>
                 <div class="level-buttons">
@@ -182,19 +172,6 @@
                 <p id="level-desc" style="font-size:0.85rem;color:#888;margin-top:8px">
                     Medium: Removes relative clauses and adverbial modifiers
                 </p>
-            </div>
-
-            <!-- Target Word Count -->
-            <div class="target-toggle">
-                <input type="checkbox" id="use-target" onchange="toggleTarget()">
-                <label for="use-target" style="margin:0;font-weight:400">Use target word count instead</label>
-            </div>
-            <div id="target-section" style="display:none;margin-top:8px">
-                <div class="target-input">
-                    <span style="font-size:0.9rem;color:#555">Compress to</span>
-                    <input type="number" id="target-words" min="2" max="50" value="8" placeholder="8">
-                    <span style="font-size:0.9rem;color:#555">words</span>
-                </div>
             </div>
 
             <button class="btn-primary" id="compress-btn" onclick="compressSentence()">
@@ -217,7 +194,7 @@
                 </div>
             </div>
 
-            <button class="btn-primary" id="batch-btn" onclick="batchCompress()" style="margin-top:16px">
+            <button class="btn-primary" onclick="batchCompress()" id="batch-compress-btn" style="margin-top:16px">
                 Compress All Sentences
             </button>
 
@@ -232,7 +209,8 @@
         <div id="tab-history" class="tab-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <label style="margin:0">Compression History</label>
-                <button onclick="clearHistory()" style="padding:6px 14px;border-radius:6px;border:1px solid #ff6b6b;background:white;color:#ff6b6b;font-size:0.8rem;font-weight:600;cursor:pointer;width:auto;margin-top:0">
+                <button onclick="clearHistory()"
+                    style="padding:6px 14px;border-radius:6px;border:1px solid #ff6b6b;background:white;color:#ff6b6b;font-size:0.8rem;font-weight:600;cursor:pointer;width:auto;margin-top:0">
                     Clear History
                 </button>
             </div>
@@ -245,10 +223,9 @@
     <!-- Result Card -->
     <div class="card" id="result-section">
         <h2 class="result-title">Results
-            <span class="badge badge-blue" id="level-badge">Medium</span>
+            <span class="badge" id="level-badge">Medium</span>
         </h2>
 
-        <!-- Side by side -->
         <div class="row">
             <div class="result-box">
                 <p class="box-label">Original</p>
@@ -311,39 +288,38 @@
         </div>
 
         <!-- Dependency Tree -->
-        <div id="tree-section">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <label style="margin:0">Dependency Parse Tree</label>
-                <span style="font-size:0.8rem;color:#888">Red = removed | Green = kept (in compressed)</span>
+        <button class="tree-btn" onclick="showTree()" id="tree-btn">
+            🌳 Show Dependency Parse Tree
+        </button>
+
+        <div id="tree-section" style="display:none;margin-top:16px">
+            <div class="tree-info">
+                <strong>How to read this tree:</strong> Each word is a node. Arrows show grammatical relationships between words.
+                The main verb (ROOT) is at the top. Labels like <em>nsubj</em> = subject, <em>relcl</em> = relative clause,
+                <em>advmod</em> = adverb modifier. Our algorithm removes subtrees like relative clauses and adverbs to compress the sentence.
             </div>
             <div class="tree-container" id="tree-container"></div>
         </div>
-
-        <button class="btn-primary" onclick="showTree()" id="tree-btn" style="margin-top:16px">
-            🌳 Show Dependency Tree
-        </button>
     </div>
 
-    <p class="footer">Sentence Compression using Syntax | Filippova & Altun 2013 Dataset | spaCy NLP</p>
+    <p class="footer">Sentence Compression using Syntax | Filippova & Altun 2013 | spaCy NLP Pipeline</p>
 
     <script>
         let currentLevel = 'medium';
         let batchLevel = 'medium';
-        let history = [];
+        let compressionHistory = [];
         let batchResults = [];
         let currentSentence = '';
         let currentCompressed = '';
         const API = 'https://sentence-compression.onrender.com';
 
-        // Tab switching
-        function switchTab(tab) {
+        function switchTab(tab, el) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + tab).classList.add('active');
-            event.target.classList.add('active');
+            el.classList.add('active');
         }
 
-        // Level selection
         function setLevel(level) {
             currentLevel = level;
             ['light', 'medium', 'heavy'].forEach(l => {
@@ -353,7 +329,7 @@
             const descs = {
                 'light': 'Light: Only removes relative clauses and appositives',
                 'medium': 'Medium: Removes relative clauses and adverbial modifiers',
-                'heavy': 'Heavy: Aggressive compression, removes prepositional phrases too'
+                'heavy': 'Heavy: Aggressive compression, removes prepositional phrases and adjectives too'
             };
             document.getElementById('level-desc').textContent = descs[level];
         }
@@ -366,21 +342,10 @@
             document.getElementById('batch-btn-' + level).classList.add('active');
         }
 
-        // Toggle target word count
-        function toggleTarget() {
-            const useTarget = document.getElementById('use-target').checked;
-            document.getElementById('target-section').style.display = useTarget ? 'block' : 'none';
-            const levelSection = document.querySelector('.level-buttons').parentElement;
-            levelSection.style.opacity = useTarget ? '0.4' : '1';
-        }
-
-        // Main compression
         async function compressSentence() {
             const sentence = document.getElementById('input-sentence').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const btn = document.getElementById('compress-btn');
-            const useTarget = document.getElementById('use-target').checked;
-            const targetWords = useTarget ? document.getElementById('target-words').value : null;
 
             if (!sentence) {
                 errorMsg.textContent = 'Please enter a sentence!';
@@ -394,13 +359,10 @@
             document.getElementById('tree-section').style.display = 'none';
 
             try {
-                const body = { sentence, level: currentLevel };
-                if (targetWords) body.target_words = parseInt(targetWords);
-
                 const response = await fetch(`${API}/compress`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify({ sentence, level: currentLevel })
                 });
 
                 const data = await response.json();
@@ -426,11 +388,8 @@
                 document.getElementById('stat-compressed').textContent = data.compressed_word_count;
                 document.getElementById('stat-ratio').textContent = Math.round(data.compression_ratio * 100) + '%';
                 document.getElementById('stat-removed').textContent = data.original_word_count - data.compressed_word_count;
-                const useTarget = document.getElementById('use-target').checked;
-                const targetVal = document.getElementById('target-words').value;
-                document.getElementById('level-badge').textContent = useTarget ? `Target: ${targetVal} words` : currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
+                document.getElementById('level-badge').textContent = currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
 
-                // ROUGE scores
                 if (data.rouge_scores) {
                     document.getElementById('rouge1').textContent = data.rouge_scores.rouge1;
                     document.getElementById('rouge2').textContent = data.rouge_scores.rouge2;
@@ -438,21 +397,28 @@
                 }
 
                 document.getElementById('result-section').style.display = 'block';
+                document.getElementById('tree-btn').textContent = '🌳 Show Dependency Parse Tree';
 
-                // Add to history
                 addToHistory(data.original, data.compressed, currentLevel, data.compression_ratio);
 
             } catch (err) {
-                errorMsg.textContent = 'Could not connect to API. Please wait and try again!';
+                errorMsg.textContent = 'Could not connect to API. Please wait 30 seconds and try again (free server waking up)!';
             }
 
             btn.disabled = false;
             btn.textContent = 'Compress Sentence';
         }
 
-        // Show dependency tree
         async function showTree() {
             const btn = document.getElementById('tree-btn');
+            const treeSection = document.getElementById('tree-section');
+
+            if (treeSection.style.display === 'block') {
+                treeSection.style.display = 'none';
+                btn.textContent = '🌳 Show Dependency Parse Tree';
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Loading tree...';
 
@@ -465,8 +431,8 @@
 
                 const data = await response.json();
                 document.getElementById('tree-container').innerHTML = data.svg;
-                document.getElementById('tree-section').style.display = 'block';
-                btn.textContent = '🌳 Refresh Tree';
+                treeSection.style.display = 'block';
+                btn.textContent = '🌳 Hide Dependency Parse Tree';
             } catch (err) {
                 alert('Could not load tree. Try again!');
             }
@@ -474,10 +440,9 @@
             btn.disabled = false;
         }
 
-        // Batch compression
         async function batchCompress() {
             const input = document.getElementById('batch-input').value.trim();
-            const btn = document.getElementById('batch-btn');
+            const btn = document.getElementById('batch-compress-btn');
 
             if (!input) { alert('Please enter sentences!'); return; }
 
@@ -496,7 +461,7 @@
                 batchResults = data.results;
 
                 let html = `<p style="font-weight:600;margin-bottom:12px">Results: ${data.total} sentences compressed</p>`;
-                data.results.forEach((r, i) => {
+                data.results.forEach(r => {
                     html += `
                         <div class="batch-result">
                             <p class="batch-original">Original: ${r.original}</p>
@@ -506,17 +471,16 @@
                 });
 
                 document.getElementById('batch-results').innerHTML = html;
-                document.getElementById('download-btn').style.display = 'block';
+                document.getElementById('download-btn').style.display = 'inline-block';
 
             } catch (err) {
-                alert('Could not connect to API!');
+                alert('Could not connect to API. Please wait and try again!');
             }
 
             btn.disabled = false;
             btn.textContent = 'Compress All Sentences';
         }
 
-        // Download CSV
         function downloadCSV() {
             let csv = 'Original,Compressed,Original Words,Compressed Words,Ratio,ROUGE-1\n';
             batchResults.forEach(r => {
@@ -530,7 +494,6 @@
             a.click();
         }
 
-        // Copy compressed
         function copyCompressed() {
             navigator.clipboard.writeText(currentCompressed);
             const btn = document.querySelector('.copy-btn');
@@ -538,32 +501,35 @@
             setTimeout(() => btn.textContent = '📋 Copy', 2000);
         }
 
-        // History
         function addToHistory(original, compressed, level, ratio) {
-            history.unshift({ original, compressed, level, ratio, time: new Date().toLocaleTimeString() });
-            if (history.length > 20) history.pop();
+            compressionHistory.unshift({
+                original, compressed, level, ratio,
+                time: new Date().toLocaleTimeString()
+            });
+            if (compressionHistory.length > 20) compressionHistory.pop();
             renderHistory();
         }
 
         function renderHistory() {
-            if (history.length === 0) {
-                document.getElementById('history-list').innerHTML = '<p style="color:#aaa;font-size:0.9rem">No history yet.</p>';
+            if (compressionHistory.length === 0) {
+                document.getElementById('history-list').innerHTML =
+                    '<p style="color:#aaa;font-size:0.9rem">No history yet.</p>';
                 return;
             }
             let html = '';
-            history.forEach(h => {
+            compressionHistory.forEach(h => {
                 html += `
                     <div class="history-item">
                         <p class="history-original">${h.original}</p>
                         <p class="history-compressed">→ ${h.compressed}</p>
-                        <p class="history-meta">${h.level} | ${Math.round(h.ratio * 100)}% | ${h.time}</p>
+                        <p class="history-meta">${h.level} | ${Math.round(h.ratio * 100)}% compressed | ${h.time}</p>
                     </div>`;
             });
             document.getElementById('history-list').innerHTML = html;
         }
 
         function clearHistory() {
-            history = [];
+            compressionHistory = [];
             renderHistory();
         }
     </script>
