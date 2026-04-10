@@ -8,10 +8,41 @@ CORS(app)
 
 nlp = spacy.load("en_core_web_sm")
 
+# Carefully tuned compression levels
+# light  - only removes extra descriptive clauses
+# medium - removes clauses + time/place adverbials
+# heavy  - removes everything except core subject+verb+object
 COMPRESSION_LEVELS = {
-    "light": {"relcl", "appos"},
-    "medium": {"relcl", "prep", "advmod", "npadvmod", "advcl", "appos", "pobj", "amod"},
-    "heavy": {"relcl", "prep", "advmod", "npadvmod", "advcl", "appos", "pobj", "amod", "det", "cc", "conj", "mark"}
+    "light": {
+        "relcl",      # relative clause (who graduated from Harvard)
+        "appos",      # apposition (John, the CEO, ...)
+        "acl",        # clausal modifier
+    },
+    "medium": {
+        "relcl",      # relative clause
+        "appos",      # apposition
+        "acl",        # clausal modifier
+        "advcl",      # adverbial clause (because, although...)
+        "npadvmod",   # noun phrase adverbial (last year)
+        "advmod",     # adverb modifier (recently, quickly)
+    },
+    "heavy": {
+        "relcl",      # relative clause
+        "appos",      # apposition
+        "acl",        # clausal modifier
+        "advcl",      # adverbial clause
+        "npadvmod",   # noun phrase adverbial
+        "advmod",     # adverb modifier
+        "prep",       # prepositional phrase (on climate change)
+        "pobj",       # object of preposition
+        "amod",       # adjectival modifier (young, prestigious)
+        "det",        # determiner (the, a)
+        "cc",         # coordinating conjunction (and, but)
+        "conj",       # conjunct
+        "mark",       # marker (that, which)
+        "quantmod",   # quantifier modifier
+        "nummod",     # numeric modifier
+    }
 }
 
 def compress_sentence(sentence, level="medium"):
@@ -26,19 +57,41 @@ def compress_sentence(sentence, level="medium"):
 
     for token in doc:
         if token.dep_ in REMOVE_DEPS:
+            # Never remove ROOT token (main verb)
+            if token.dep_ == "ROOT":
+                continue
+            # Never remove subject (nsubj, nsubjpass)
+            if token.dep_ in {"nsubj", "nsubjpass"}:
+                continue
+            # Never remove direct object (dobj)
+            if token.dep_ == "dobj":
+                continue
             mark_subtree(token)
+
+    # Always keep ROOT, nsubj, dobj tokens
+    for token in doc:
+        if token.dep_ in {"ROOT", "nsubj", "nsubjpass", "dobj"}:
+            remove_indices.discard(token.i)
 
     compressed = " ".join([token.text for token in doc if token.i not in remove_indices])
 
+    # Clean up punctuation and spacing
     compressed = re.sub(r'\s+', ' ', compressed)
     compressed = re.sub(r'\s([.,;:!?])', r'\1', compressed)
     compressed = re.sub(r',+', ',', compressed)
     compressed = re.sub(r',\s*\.', '.', compressed)
     compressed = re.sub(r'\(\s*\)', '', compressed)
     compressed = re.sub(r'--\s*--', '', compressed)
+    compressed = re.sub(r'\s*-\s*-\s*', ' ', compressed)
     compressed = compressed.strip(" ,")
-    if not compressed.endswith('.'):
+
+    # Make sure it ends with a period
+    if compressed and not compressed[-1] in '.!?':
         compressed += '.'
+
+    # If compression removed too much (less than 2 words), return original
+    if len(compressed.split()) < 2:
+        return sentence
 
     return compressed
 
