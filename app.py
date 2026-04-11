@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import spacy
-from spacy import displacy
 import re
 from rouge_score import rouge_scorer
 
@@ -36,38 +35,38 @@ def compress_sentence(sentence, level="medium"):
             main_protected.add(child.i)
 
     if level == "light":
-        removable_sets = [{"relcl", "appos", "acl"}]
+        removable = {"relcl"}
     elif level == "medium":
-        removable_sets = [
-            {"relcl", "appos", "acl"},
-            {"npadvmod", "advmod", "advcl"}
-        ]
+        removable = {"relcl", "appos", "acl", "advmod", "npadvmod", "advcl"}
     else:
-        removable_sets = [
-            {"relcl", "appos", "acl"},
-            {"npadvmod", "advmod", "advcl"},
-            {"prep", "amod", "cc", "conj", "mark"}
-        ]
+        removable = {"relcl", "appos", "acl", "advmod", "npadvmod", "advcl", "prep", "amod", "cc", "conj", "mark"}
 
     remove_indices = set()
-    for removable in removable_sets:
-        for token in doc:
-            if token.i in main_protected:
-                continue
-            if token.dep_ == "ROOT":
-                continue
-            if token.dep_ in removable:
-                subtree = get_subtree_indices(token)
-                safe = True
-                for idx in subtree:
-                    if idx in main_protected:
-                        safe = False
-                        break
-                    if doc[idx].dep_ == "ROOT":
-                        safe = False
-                        break
-                if safe:
-                    remove_indices.update(subtree)
+
+    for token in doc:
+        if token.i in main_protected:
+            continue
+        if token.dep_ == "ROOT":
+            continue
+        if token.dep_ in removable:
+            subtree = get_subtree_indices(token)
+            safe = True
+            for idx in subtree:
+                if idx in main_protected:
+                    safe = False
+                    break
+                if doc[idx].dep_ == "ROOT":
+                    safe = False
+                    break
+            if safe:
+                remove_indices.update(subtree)
+
+    for token in doc:
+        if token.is_punct and token.text in {",", ";"}:
+            prev_removed = (token.i - 1) in remove_indices if token.i > 0 else True
+            next_removed = (token.i + 1) in remove_indices if token.i < len(doc) - 1 else True
+            if prev_removed or next_removed:
+                remove_indices.add(token.i)
 
     return build_sentence(doc, remove_indices)
 
@@ -88,7 +87,6 @@ def build_sentence(doc, remove_indices):
 
     result = re.sub(r'\s+', ' ', result)
     result = re.sub(r'\s([.,;:!?])', r'\1', result)
-    result = re.sub(r',\s+([a-z])', lambda m: ' ' + m.group(1), result)
     result = re.sub(r',+', ',', result)
     result = re.sub(r',\s*\.', '.', result)
     result = re.sub(r'--\s*--', '', result)
@@ -112,6 +110,84 @@ def get_rouge_scores(original, compressed):
         "rouge2": round(scores['rouge2'].fmeasure, 4),
         "rougeL": round(scores['rougeL'].fmeasure, 4)
     }
+
+def get_tree_data(sentence, level):
+    doc = nlp(sentence)
+    root = get_root(doc)
+    if not root:
+        return []
+
+    main_protected = {root.i}
+    for child in root.children:
+        if child.dep_ in {"nsubj", "nsubjpass", "dobj", "aux", "auxpass", "neg"}:
+            main_protected.add(child.i)
+
+    if level == "light":
+        removable = {"relcl"}
+    elif level == "medium":
+        removable = {"relcl", "appos", "acl", "advmod", "npadvmod", "advcl"}
+    else:
+        removable = {"relcl", "appos", "acl", "advmod", "npadvmod", "advcl", "prep", "amod", "cc", "conj", "mark"}
+
+    remove_indices = set()
+    for token in doc:
+        if token.i in main_protected:
+            continue
+        if token.dep_ == "ROOT":
+            continue
+        if token.dep_ in removable:
+            subtree = get_subtree_indices(token)
+            safe = True
+            for idx in subtree:
+                if idx in main_protected:
+                    safe = False
+                    break
+                if doc[idx].dep_ == "ROOT":
+                    safe = False
+                    break
+            if safe:
+                remove_indices.update(subtree)
+
+    role_map = {
+        "ROOT": "Main Verb",
+        "nsubj": "Subject",
+        "nsubjpass": "Subject",
+        "dobj": "Object",
+        "relcl": "Relative Clause",
+        "advmod": "Adverb",
+        "npadvmod": "Time/Place",
+        "appos": "Apposition",
+        "prep": "Preposition",
+        "amod": "Adjective",
+        "acl": "Clause",
+        "advcl": "Adv Clause",
+        "det": "Determiner",
+        "aux": "Auxiliary",
+        "auxpass": "Auxiliary",
+        "neg": "Negation",
+        "pobj": "Prep Object",
+        "compound": "Compound",
+        "cc": "Conjunction",
+        "conj": "Conjunct",
+        "mark": "Marker",
+        "punct": "Punctuation"
+    }
+
+    tokens = []
+    for token in doc:
+        if token.is_punct:
+            continue
+        status = "removed" if token.i in remove_indices else "kept"
+        role = role_map.get(token.dep_, token.dep_)
+        tokens.append({
+            "text": token.text,
+            "dep": token.dep_,
+            "role": role,
+            "status": status,
+            "pos": token.pos_
+        })
+
+    return tokens
 
 @app.route('/')
 def home():
@@ -183,23 +259,10 @@ def tree():
         return jsonify({"error": "Please provide a sentence"}), 400
     sentence = data['sentence'].strip()
     level = data.get('level', 'medium')
-    doc = nlp(sentence)
+    tokens = get_tree_data(sentence, level)
     compressed = compress_sentence(sentence, level)
-    compressed_words = set(compressed.lower().replace('.', '').split())
-    options = {
-        "compact": True,
-        "bg": "#f8f9fa",
-        "color": "#333333",
-        "font": "Arial",
-        "distance": 100,
-        "arrow_stroke": 2,
-        "arrow_width": 8
-    }
-    svg = displacy.render(doc, style="dep", options=options, page=False)
-    removed_words = [t.text for t in doc if t.text.lower() not in compressed_words and not t.is_punct]
     return jsonify({
-        "svg": svg,
-        "removed_words": removed_words,
+        "tokens": tokens,
         "compressed": compressed
     })
 
