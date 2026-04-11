@@ -91,19 +91,73 @@
         .copy-btn {
             margin-top: 8px; padding: 6px 14px; border-radius: 6px;
             border: 1px solid #667eea; background: white; color: #667eea;
-            font-size: 0.8rem; font-weight: 600; cursor: pointer;
-            width: auto;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; width: auto;
         }
         .copy-btn:hover { background: #667eea; color: white; }
-        .tree-container {
-            overflow-x: auto; background: #f8f9fa;
-            border-radius: 10px; padding: 16px;
-            border: 2px solid #e0e0e0; margin-top: 16px;
+        .tree-btn {
+            margin-top: 16px; width: 100%; padding: 12px;
+            background: white; color: #667eea;
+            border: 2px solid #667eea; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
         }
-        .tree-info {
-            background: #fff3cd; border: 1px solid #ffc107;
-            border-radius: 8px; padding: 12px; margin-bottom: 12px;
-            font-size: 0.85rem; color: #555; line-height: 1.5;
+        .tree-btn:hover { background: #667eea; color: white; }
+        .tree-visual {
+            margin-top: 16px; padding: 20px;
+            background: #f8f9fa; border-radius: 10px;
+            border: 2px solid #e0e0e0; display: none;
+        }
+        .tree-title {
+            font-size: 1rem; font-weight: 600; color: #333;
+            margin-bottom: 16px;
+        }
+        .tree-words {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 20px;
+        }
+        .tree-word {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 4px;
+        }
+        .word-chip {
+            padding: 8px 12px; border-radius: 8px;
+            font-size: 0.95rem; font-weight: 600;
+            border: 2px solid;
+        }
+        .word-chip.kept {
+            background: #d3f9d8; border-color: #51cf66; color: #2f9e44;
+        }
+        .word-chip.removed {
+            background: #ffe3e3; border-color: #ff6b6b; color: #c92a2a;
+            text-decoration: line-through;
+        }
+        .word-role {
+            font-size: 0.7rem; color: #888; text-align: center;
+            max-width: 80px; word-break: break-word;
+        }
+        .word-role.removed-role { color: #ff6b6b; font-weight: 600; }
+        .tree-legend {
+            display: flex; gap: 16px; margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tree-legend-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; color: #555;
+        }
+        .tree-legend-dot {
+            width: 12px; height: 12px; border-radius: 3px;
+        }
+        .removed-list {
+            background: #fff5f5; border: 1px solid #ff6b6b;
+            border-radius: 8px; padding: 12px; margin-top: 12px;
+        }
+        .removed-list-title {
+            font-size: 0.85rem; font-weight: 600; color: #c92a2a;
+            margin-bottom: 8px;
+        }
+        .removed-tag {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            background: #ffe3e3; border: 1px solid #ff6b6b;
+            color: #c92a2a; font-size: 0.8rem; margin: 2px;
         }
         .history-item {
             padding: 12px; background: #f8f9fa; border-radius: 8px;
@@ -133,13 +187,6 @@
             width: auto; display: none;
         }
         .download-btn:hover { background: #667eea; color: white; }
-        .tree-btn {
-            margin-top: 16px; width: 100%; padding: 12px;
-            background: white; color: #667eea;
-            border: 2px solid #667eea; border-radius: 10px;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-        }
-        .tree-btn:hover { background: #667eea; color: white; }
     </style>
 </head>
 <body>
@@ -168,7 +215,7 @@
                     <button class="level-btn" onclick="setLevel('heavy')" id="btn-heavy">🔴 Heavy</button>
                 </div>
                 <p id="level-desc" style="font-size:0.85rem;color:#888;margin-top:8px">
-                    Medium: Removes relative clauses and adverbial modifiers
+                    Medium: Removes relative clauses, appositions and adverbial modifiers
                 </p>
             </div>
             <button class="btn-primary" id="compress-btn" onclick="compressSentence()">Compress Sentence</button>
@@ -233,6 +280,7 @@
                 <button class="copy-btn" onclick="copyCompressed()">📋 Copy</button>
             </div>
         </div>
+
         <div class="stats-row">
             <div class="stat">
                 <p class="stat-value" id="stat-original"></p>
@@ -251,6 +299,7 @@
                 <p class="stat-label">Words Removed</p>
             </div>
         </div>
+
         <div class="rouge-row">
             <div class="rouge-item">
                 <p class="rouge-value" id="rouge1">-</p>
@@ -265,15 +314,20 @@
                 <p class="rouge-label">ROUGE-L</p>
             </div>
         </div>
-        <button class="tree-btn" onclick="showTree()" id="tree-btn">🌳 Show Dependency Parse Tree</button>
-        <div id="tree-section" style="display:none;margin-top:16px">
-            <div class="tree-info">
-                <strong>How to read this tree:</strong> Each word is a node. Arrows show grammatical relationships.
-                The main verb (ROOT) is at the top. Labels: <em>nsubj</em> = subject, <em>relcl</em> = relative clause,
-                <em>advmod</em> = adverb, <em>prep</em> = prepositional phrase.
-                Our algorithm removes subtrees like relative clauses and adverbs to compress the sentence while keeping the core meaning.
-            </div>
-            <div class="tree-container" id="tree-container"></div>
+
+        <button class="tree-btn" onclick="toggleTree()" id="tree-btn">
+            🌳 Show Syntax Analysis
+        </button>
+
+        <div class="tree-visual" id="tree-visual">
+            <p class="tree-title">Syntax-Based Word Analysis</p>
+            <p style="font-size:0.85rem;color:#666;margin-bottom:12px">
+                Each word is shown with its grammatical role. 
+                <span style="color:#2f9e44;font-weight:600">Green = kept</span> in compressed sentence. 
+                <span style="color:#c92a2a;font-weight:600">Red = removed</span> by our algorithm.
+            </p>
+            <div class="tree-words" id="tree-words"></div>
+            <div class="removed-list" id="removed-list"></div>
         </div>
     </div>
 
@@ -286,6 +340,7 @@
         let batchResults = [];
         let currentSentence = '';
         let currentCompressed = '';
+        let treeLoaded = false;
         const API = 'https://sentence-compression.onrender.com';
 
         function switchTab(tab, el) {
@@ -302,8 +357,8 @@
             });
             document.getElementById('btn-' + level).classList.add('active');
             const descs = {
-                'light': 'Light: Only removes relative clauses and appositives',
-                'medium': 'Medium: Removes relative clauses and adverbial modifiers',
+                'light': 'Light: Only removes relative clauses (e.g. "who graduated from Harvard")',
+                'medium': 'Medium: Removes relative clauses, appositions and adverbial modifiers',
                 'heavy': 'Heavy: Aggressive — removes prepositional phrases and adjectives too'
             };
             document.getElementById('level-desc').textContent = descs[level];
@@ -327,7 +382,8 @@
             btn.disabled = true;
             btn.textContent = 'Compressing...';
             document.getElementById('result-section').style.display = 'none';
-            document.getElementById('tree-section').style.display = 'none';
+            document.getElementById('tree-visual').style.display = 'none';
+            treeLoaded = false;
 
             try {
                 const response = await fetch(`${API}/compress`, {
@@ -366,7 +422,7 @@
                 }
 
                 document.getElementById('result-section').style.display = 'block';
-                document.getElementById('tree-btn').textContent = '🌳 Show Dependency Parse Tree';
+                document.getElementById('tree-btn').textContent = '🌳 Show Syntax Analysis';
                 addToHistory(data.original, data.compressed, currentLevel, data.compression_ratio);
 
             } catch (err) {
@@ -377,18 +433,24 @@
             btn.textContent = 'Compress Sentence';
         }
 
-        async function showTree() {
+        async function toggleTree() {
+            const treeVisual = document.getElementById('tree-visual');
             const btn = document.getElementById('tree-btn');
-            const treeSection = document.getElementById('tree-section');
 
-            if (treeSection.style.display === 'block') {
-                treeSection.style.display = 'none';
-                btn.textContent = '🌳 Show Dependency Parse Tree';
+            if (treeVisual.style.display === 'block') {
+                treeVisual.style.display = 'none';
+                btn.textContent = '🌳 Show Syntax Analysis';
+                return;
+            }
+
+            if (treeLoaded) {
+                treeVisual.style.display = 'block';
+                btn.textContent = '🌳 Hide Syntax Analysis';
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = 'Loading tree...';
+            btn.textContent = 'Loading...';
 
             try {
                 const response = await fetch(`${API}/tree`, {
@@ -397,11 +459,44 @@
                     body: JSON.stringify({ sentence: currentSentence, level: currentLevel })
                 });
                 const data = await response.json();
-                document.getElementById('tree-container').innerHTML = data.svg;
-                treeSection.style.display = 'block';
-                btn.textContent = '🌳 Hide Dependency Parse Tree';
+
+                // Build visual word chips
+                let wordsHtml = '';
+                let removedWords = [];
+
+                data.tokens.forEach(token => {
+                    const chipClass = token.status === 'kept' ? 'kept' : 'removed';
+                    const roleClass = token.status === 'removed' ? 'removed-role' : '';
+                    wordsHtml += `
+                        <div class="tree-word">
+                            <div class="word-chip ${chipClass}">${token.text}</div>
+                            <div class="word-role ${roleClass}">${token.role}</div>
+                        </div>`;
+                    if (token.status === 'removed') {
+                        removedWords.push({ text: token.text, role: token.role });
+                    }
+                });
+
+                document.getElementById('tree-words').innerHTML = wordsHtml;
+
+                // Removed words summary
+                if (removedWords.length > 0) {
+                    let removedHtml = '<div class="removed-list-title">🗑 Words removed by algorithm:</div>';
+                    removedWords.forEach(w => {
+                        removedHtml += `<span class="removed-tag">${w.text} <em style="font-size:0.7rem">(${w.role})</em></span>`;
+                    });
+                    document.getElementById('removed-list').innerHTML = removedHtml;
+                    document.getElementById('removed-list').style.display = 'block';
+                } else {
+                    document.getElementById('removed-list').style.display = 'none';
+                }
+
+                treeVisual.style.display = 'block';
+                btn.textContent = '🌳 Hide Syntax Analysis';
+                treeLoaded = true;
+
             } catch (err) {
-                alert('Could not load tree. Try again!');
+                alert('Could not load analysis. Try again!');
             }
             btn.disabled = false;
         }
