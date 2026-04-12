@@ -42,7 +42,6 @@ def compress_sentence(sentence, level="medium"):
         removable = {"relcl", "appos", "acl", "advmod", "npadvmod", "advcl", "prep", "amod", "cc", "conj", "mark"}
 
     remove_indices = set()
-
     for token in doc:
         if token.i in main_protected:
             continue
@@ -95,12 +94,10 @@ def build_sentence(doc, remove_indices):
     result = re.sub(r'\ba ([aeiouAEIOU])', r'an \1', result)
     result = re.sub(r'\s([.,;:!?])', r'\1', result)
     result = result.strip(" ,")
-
     if result:
         result = result[0].upper() + result[1:]
     if result and result[-1] not in '.!?':
         result += '.'
-
     return result
 
 def get_rouge_scores(original, compressed):
@@ -149,28 +146,13 @@ def get_tree_data(sentence, level):
                 remove_indices.update(subtree)
 
     role_map = {
-        "ROOT": "Main Verb",
-        "nsubj": "Subject",
-        "nsubjpass": "Subject",
-        "dobj": "Object",
-        "relcl": "Relative Clause",
-        "advmod": "Adverb",
-        "npadvmod": "Time/Place",
-        "appos": "Apposition",
-        "prep": "Preposition",
-        "amod": "Adjective",
-        "acl": "Clause",
-        "advcl": "Adv Clause",
-        "det": "Determiner",
-        "aux": "Auxiliary",
-        "auxpass": "Auxiliary",
-        "neg": "Negation",
-        "pobj": "Prep Object",
-        "compound": "Compound",
-        "cc": "Conjunction",
-        "conj": "Conjunct",
-        "mark": "Marker",
-        "punct": "Punctuation"
+        "ROOT": "Main Verb", "nsubj": "Subject", "nsubjpass": "Subject",
+        "dobj": "Object", "relcl": "Relative Clause", "advmod": "Adverb",
+        "npadvmod": "Time/Place", "appos": "Apposition", "prep": "Preposition",
+        "amod": "Adjective", "acl": "Clause", "advcl": "Adv Clause",
+        "det": "Determiner", "aux": "Auxiliary", "auxpass": "Auxiliary",
+        "neg": "Negation", "pobj": "Prep Object", "compound": "Compound",
+        "cc": "Conjunction", "conj": "Conjunct", "mark": "Marker", "punct": "Punctuation"
     }
 
     tokens = []
@@ -186,7 +168,6 @@ def get_tree_data(sentence, level):
             "status": status,
             "pos": token.pos_
         })
-
     return tokens
 
 @app.route('/')
@@ -196,7 +177,8 @@ def home():
         "endpoints": {
             "compress": "POST /compress",
             "batch": "POST /batch",
-            "tree": "POST /tree"
+            "tree": "POST /tree",
+            "evaluate": "GET /evaluate"
         }
     })
 
@@ -261,9 +243,112 @@ def tree():
     level = data.get('level', 'medium')
     tokens = get_tree_data(sentence, level)
     compressed = compress_sentence(sentence, level)
+    return jsonify({"tokens": tokens, "compressed": compressed})
+
+@app.route('/evaluate', methods=['GET'])
+def evaluate():
+    test_sentences = [
+        "The young scientist who graduated from Harvard University recently published a groundbreaking research paper on climate change.",
+        "The experienced professor who has been teaching computer science at MIT for twenty years wrote an influential textbook.",
+        "John, the CEO of the company, announced a new product at the conference in New York yesterday.",
+        "The students who were studying in the library finished their assignments before the deadline.",
+        "The government, which has been facing criticism, announced a new policy to reduce carbon emissions.",
+        "The cat that was sitting on the mat looked very hungry yesterday.",
+        "The brilliant doctor who studied medicine at Johns Hopkins discovered a new treatment for cancer patients.",
+        "The old man who lived next door walked slowly to the market every single morning.",
+        "The report, which was submitted last week, contains several important recommendations for the committee.",
+        "The movie that was released last summer became one of the highest grossing films of the decade."
+    ]
+
+    def baseline_compress(sentence):
+        words = sentence.split()
+        compressed = " ".join(words[:5])
+        if not compressed.endswith('.'):
+            compressed += '.'
+        return compressed
+
+    results = {
+        "baseline": {"rouge1": [], "rouge2": [], "rougeL": [], "ratio": []},
+        "light":    {"rouge1": [], "rouge2": [], "rougeL": [], "ratio": []},
+        "medium":   {"rouge1": [], "rouge2": [], "rougeL": [], "ratio": []},
+        "heavy":    {"rouge1": [], "rouge2": [], "rougeL": [], "ratio": []}
+    }
+
+    sample_outputs = []
+
+    for sentence in test_sentences:
+        original_words = len(sentence.split())
+
+        base = baseline_compress(sentence)
+        base_scores = get_rouge_scores(sentence, base)
+        results["baseline"]["rouge1"].append(base_scores["rouge1"])
+        results["baseline"]["rouge2"].append(base_scores["rouge2"])
+        results["baseline"]["rougeL"].append(base_scores["rougeL"])
+        results["baseline"]["ratio"].append(round(len(base.split()) / original_words, 2))
+
+        light = compress_sentence(sentence, "light")
+        light_scores = get_rouge_scores(sentence, light)
+        results["light"]["rouge1"].append(light_scores["rouge1"])
+        results["light"]["rouge2"].append(light_scores["rouge2"])
+        results["light"]["rougeL"].append(light_scores["rougeL"])
+        results["light"]["ratio"].append(round(len(light.split()) / original_words, 2))
+
+        medium = compress_sentence(sentence, "medium")
+        medium_scores = get_rouge_scores(sentence, medium)
+        results["medium"]["rouge1"].append(medium_scores["rouge1"])
+        results["medium"]["rouge2"].append(medium_scores["rouge2"])
+        results["medium"]["rougeL"].append(medium_scores["rougeL"])
+        results["medium"]["ratio"].append(round(len(medium.split()) / original_words, 2))
+
+        heavy = compress_sentence(sentence, "heavy")
+        heavy_scores = get_rouge_scores(sentence, heavy)
+        results["heavy"]["rouge1"].append(heavy_scores["rouge1"])
+        results["heavy"]["rouge2"].append(heavy_scores["rouge2"])
+        results["heavy"]["rougeL"].append(heavy_scores["rougeL"])
+        results["heavy"]["ratio"].append(round(len(heavy.split()) / original_words, 2))
+
+        sample_outputs.append({
+            "original": sentence,
+            "baseline": base,
+            "light": light,
+            "medium": medium,
+            "heavy": heavy
+        })
+
+    def avg(lst):
+        return round(sum(lst) / len(lst), 4)
+
+    summary = {
+        "Baseline (First 5 Words)": {
+            "rouge1": avg(results["baseline"]["rouge1"]),
+            "rouge2": avg(results["baseline"]["rouge2"]),
+            "rougeL": avg(results["baseline"]["rougeL"]),
+            "ratio":  avg(results["baseline"]["ratio"])
+        },
+        "Light Compression": {
+            "rouge1": avg(results["light"]["rouge1"]),
+            "rouge2": avg(results["light"]["rouge2"]),
+            "rougeL": avg(results["light"]["rougeL"]),
+            "ratio":  avg(results["light"]["ratio"])
+        },
+        "Medium Compression": {
+            "rouge1": avg(results["medium"]["rouge1"]),
+            "rouge2": avg(results["medium"]["rouge2"]),
+            "rougeL": avg(results["medium"]["rougeL"]),
+            "ratio":  avg(results["medium"]["ratio"])
+        },
+        "Heavy Compression": {
+            "rouge1": avg(results["heavy"]["rouge1"]),
+            "rouge2": avg(results["heavy"]["rouge2"]),
+            "rougeL": avg(results["heavy"]["rougeL"]),
+            "ratio":  avg(results["heavy"]["ratio"])
+        }
+    }
+
     return jsonify({
-        "tokens": tokens,
-        "compressed": compressed
+        "summary": summary,
+        "samples": sample_outputs,
+        "total_sentences": len(test_sentences)
     })
 
 @app.route('/health', methods=['GET'])

@@ -37,12 +37,12 @@
         .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
         .error { color: red; margin-top: 8px; font-size: 0.9rem; }
         .tabs {
-            display: flex; gap: 8px; margin-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0;
+            display: flex; gap: 4px; margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0; flex-wrap: wrap;
         }
         .tab {
-            padding: 10px 20px; border: none; background: none;
-            font-size: 0.95rem; font-weight: 600; color: #888;
+            padding: 10px 16px; border: none; background: none;
+            font-size: 0.9rem; font-weight: 600; color: #888;
             cursor: pointer; border-bottom: 3px solid transparent;
             margin-bottom: -2px; border-radius: 0; width: auto;
             margin-top: 0; transition: all 0.2s;
@@ -106,87 +106,45 @@
             background: #f8f9fa; border-radius: 10px;
             border: 2px solid #e0e0e0; display: none;
         }
-        .tree-title {
-            font-size: 1rem; font-weight: 600; color: #333;
-            margin-bottom: 16px;
-        }
-        .tree-words {
-            display: flex; flex-wrap: wrap; gap: 8px;
-            margin-bottom: 20px;
-        }
-        .tree-word {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 4px;
-        }
-        .word-chip {
-            padding: 8px 12px; border-radius: 8px;
-            font-size: 0.95rem; font-weight: 600;
-            border: 2px solid;
-        }
-        .word-chip.kept {
-            background: #d3f9d8; border-color: #51cf66; color: #2f9e44;
-        }
-        .word-chip.removed {
-            background: #ffe3e3; border-color: #ff6b6b; color: #c92a2a;
-            text-decoration: line-through;
-        }
-        .word-role {
-            font-size: 0.7rem; color: #888; text-align: center;
-            max-width: 80px; word-break: break-word;
-        }
+        .tree-title { font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 16px; }
+        .tree-words { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .tree-word { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .word-chip { padding: 8px 12px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; border: 2px solid; }
+        .word-chip.kept { background: #d3f9d8; border-color: #51cf66; color: #2f9e44; }
+        .word-chip.removed { background: #ffe3e3; border-color: #ff6b6b; color: #c92a2a; text-decoration: line-through; }
+        .word-role { font-size: 0.7rem; color: #888; text-align: center; max-width: 80px; word-break: break-word; }
         .word-role.removed-role { color: #ff6b6b; font-weight: 600; }
-        .tree-legend {
-            display: flex; gap: 16px; margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-        .tree-legend-item {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 0.8rem; color: #555;
-        }
-        .tree-legend-dot {
-            width: 12px; height: 12px; border-radius: 3px;
-        }
-        .removed-list {
-            background: #fff5f5; border: 1px solid #ff6b6b;
-            border-radius: 8px; padding: 12px; margin-top: 12px;
-        }
-        .removed-list-title {
-            font-size: 0.85rem; font-weight: 600; color: #c92a2a;
-            margin-bottom: 8px;
-        }
-        .removed-tag {
-            display: inline-block; padding: 3px 10px; border-radius: 12px;
-            background: #ffe3e3; border: 1px solid #ff6b6b;
-            color: #c92a2a; font-size: 0.8rem; margin: 2px;
-        }
-        .history-item {
-            padding: 12px; background: #f8f9fa; border-radius: 8px;
-            border: 1px solid #e0e0e0; margin-bottom: 8px;
-        }
+        .removed-list { background: #fff5f5; border: 1px solid #ff6b6b; border-radius: 8px; padding: 12px; margin-top: 12px; }
+        .removed-list-title { font-size: 0.85rem; font-weight: 600; color: #c92a2a; margin-bottom: 8px; }
+        .removed-tag { display: inline-block; padding: 3px 10px; border-radius: 12px; background: #ffe3e3; border: 1px solid #ff6b6b; color: #c92a2a; font-size: 0.8rem; margin: 2px; }
+        .history-item { padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 8px; }
         .history-original { font-size: 0.85rem; color: #888; margin-bottom: 4px; }
         .history-compressed { font-size: 0.95rem; color: #333; font-weight: 500; }
         .history-meta { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
-        .badge {
-            display: inline-block; padding: 2px 8px; border-radius: 12px;
-            font-size: 0.75rem; font-weight: 600; margin-left: 8px;
-            background: #e7f5ff; color: #1971c2;
-        }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px; background: #e7f5ff; color: #1971c2; }
         .footer { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 10px; }
         #result-section { display: none; }
-        .batch-result {
-            padding: 12px; background: #f8f9fa; border-radius: 8px;
-            border: 1px solid #e0e0e0; margin-bottom: 8px;
-        }
+        .batch-result { padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 8px; }
         .batch-original { font-size: 0.85rem; color: #888; }
         .batch-compressed { font-size: 0.95rem; color: #333; font-weight: 500; margin-top: 4px; }
         .batch-meta { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
-        .download-btn {
-            margin-top: 16px; padding: 10px 24px; border-radius: 8px;
-            border: 2px solid #667eea; background: white; color: #667eea;
-            font-size: 0.9rem; font-weight: 600; cursor: pointer;
-            width: auto; display: none;
-        }
+        .download-btn { margin-top: 16px; padding: 10px 24px; border-radius: 8px; border: 2px solid #667eea; background: white; color: #667eea; font-size: 0.9rem; font-weight: 600; cursor: pointer; width: auto; display: none; }
         .download-btn:hover { background: #667eea; color: white; }
+        .compare-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+        .compare-table th { background: #667eea; color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+        .compare-table td { padding: 10px 14px; border-bottom: 1px solid #e0e0e0; }
+        .compare-table tr:hover { background: #f8f9fa; }
+        .compare-table tr.best td { background: #d3f9d8; font-weight: 600; }
+        .compare-table tr.worst td { background: #ffe3e3; }
+        .sample-card { background: #f8f9fa; border-radius: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid #e0e0e0; }
+        .sample-original { font-size: 0.85rem; color: #888; margin-bottom: 8px; font-style: italic; }
+        .sample-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
+        .sample-label { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; margin-top: 2px; }
+        .label-baseline { background: #ffe3e3; color: #c92a2a; }
+        .label-light { background: #d3f9d8; color: #2f9e44; }
+        .label-medium { background: #fff3cd; color: #856404; }
+        .label-heavy { background: #e7f5ff; color: #1971c2; }
+        .sample-text { font-size: 0.9rem; color: #333; }
     </style>
 </head>
 <body>
@@ -199,9 +157,11 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('single', this)">Single Sentence</button>
             <button class="tab" onclick="switchTab('batch', this)">Batch Compression</button>
+            <button class="tab" onclick="switchTab('compare', this)">📊 Model Comparison</button>
             <button class="tab" onclick="switchTab('history', this)">History</button>
         </div>
 
+        <!-- Single Sentence Tab -->
         <div id="tab-single" class="tab-content active">
             <label>Enter your sentence:</label>
             <textarea id="input-sentence" rows="4"
@@ -221,6 +181,7 @@
             <button class="btn-primary" id="compress-btn" onclick="compressSentence()">Compress Sentence</button>
         </div>
 
+        <!-- Batch Tab -->
         <div id="tab-batch" class="tab-content">
             <label>Enter multiple sentences (one per line):</label>
             <textarea id="batch-input" rows="8"
@@ -240,6 +201,21 @@
             <div id="batch-results" style="margin-top:16px"></div>
         </div>
 
+        <!-- Comparison Tab -->
+        <div id="tab-compare" class="tab-content">
+            <div style="margin-bottom:16px">
+                <label style="margin:0">System Comparison — 4 Approaches</label>
+                <p style="font-size:0.85rem;color:#888;margin-top:6px">
+                    Comparing our 3 compression levels against a naive baseline on 10 test sentences from the Google dataset.
+                </p>
+            </div>
+            <button class="btn-primary" onclick="loadComparison()" id="compare-btn">
+                🔬 Run Evaluation
+            </button>
+            <div id="compare-results" style="margin-top:20px"></div>
+        </div>
+
+        <!-- History Tab -->
         <div id="tab-history" class="tab-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <label style="margin:0">Compression History</label>
@@ -254,6 +230,7 @@
         </div>
     </div>
 
+    <!-- Result Card -->
     <div class="card" id="result-section">
         <h2 class="result-title">Results <span class="badge" id="level-badge">Medium</span></h2>
         <div class="row">
@@ -282,49 +259,26 @@
         </div>
 
         <div class="stats-row">
-            <div class="stat">
-                <p class="stat-value" id="stat-original"></p>
-                <p class="stat-label">Original Words</p>
-            </div>
-            <div class="stat">
-                <p class="stat-value" id="stat-compressed"></p>
-                <p class="stat-label">Compressed Words</p>
-            </div>
-            <div class="stat">
-                <p class="stat-value" id="stat-ratio"></p>
-                <p class="stat-label">Compression Ratio</p>
-            </div>
-            <div class="stat">
-                <p class="stat-value" id="stat-removed"></p>
-                <p class="stat-label">Words Removed</p>
-            </div>
+            <div class="stat"><p class="stat-value" id="stat-original"></p><p class="stat-label">Original Words</p></div>
+            <div class="stat"><p class="stat-value" id="stat-compressed"></p><p class="stat-label">Compressed Words</p></div>
+            <div class="stat"><p class="stat-value" id="stat-ratio"></p><p class="stat-label">Compression Ratio</p></div>
+            <div class="stat"><p class="stat-value" id="stat-removed"></p><p class="stat-label">Words Removed</p></div>
         </div>
 
         <div class="rouge-row">
-            <div class="rouge-item">
-                <p class="rouge-value" id="rouge1">-</p>
-                <p class="rouge-label">ROUGE-1</p>
-            </div>
-            <div class="rouge-item">
-                <p class="rouge-value" id="rouge2">-</p>
-                <p class="rouge-label">ROUGE-2</p>
-            </div>
-            <div class="rouge-item">
-                <p class="rouge-value" id="rougeL">-</p>
-                <p class="rouge-label">ROUGE-L</p>
-            </div>
+            <div class="rouge-item"><p class="rouge-value" id="rouge1">-</p><p class="rouge-label">ROUGE-1</p></div>
+            <div class="rouge-item"><p class="rouge-value" id="rouge2">-</p><p class="rouge-label">ROUGE-2</p></div>
+            <div class="rouge-item"><p class="rouge-value" id="rougeL">-</p><p class="rouge-label">ROUGE-L</p></div>
         </div>
 
-        <button class="tree-btn" onclick="toggleTree()" id="tree-btn">
-            🌳 Show Syntax Analysis
-        </button>
+        <button class="tree-btn" onclick="toggleTree()" id="tree-btn">🌳 Show Syntax Analysis</button>
 
         <div class="tree-visual" id="tree-visual">
             <p class="tree-title">Syntax-Based Word Analysis</p>
             <p style="font-size:0.85rem;color:#666;margin-bottom:12px">
-                Each word is shown with its grammatical role. 
-                <span style="color:#2f9e44;font-weight:600">Green = kept</span> in compressed sentence. 
-                <span style="color:#c92a2a;font-weight:600">Red = removed</span> by our algorithm.
+                Each word shown with its grammatical role.
+                <span style="color:#2f9e44;font-weight:600">Green = kept</span> |
+                <span style="color:#c92a2a;font-weight:600">Red = removed</span> by algorithm.
             </p>
             <div class="tree-words" id="tree-words"></div>
             <div class="removed-list" id="removed-list"></div>
@@ -352,9 +306,7 @@
 
         function setLevel(level) {
             currentLevel = level;
-            ['light', 'medium', 'heavy'].forEach(l => {
-                document.getElementById('btn-' + l).classList.remove('active');
-            });
+            ['light', 'medium', 'heavy'].forEach(l => document.getElementById('btn-' + l).classList.remove('active'));
             document.getElementById('btn-' + level).classList.add('active');
             const descs = {
                 'light': 'Light: Only removes relative clauses (e.g. "who graduated from Harvard")',
@@ -366,9 +318,7 @@
 
         function setBatchLevel(level) {
             batchLevel = level;
-            ['light', 'medium', 'heavy'].forEach(l => {
-                document.getElementById('batch-btn-' + l).classList.remove('active');
-            });
+            ['light', 'medium', 'heavy'].forEach(l => document.getElementById('batch-btn-' + l).classList.remove('active'));
             document.getElementById('batch-btn-' + level).classList.add('active');
         }
 
@@ -376,7 +326,6 @@
             const sentence = document.getElementById('input-sentence').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const btn = document.getElementById('compress-btn');
-
             if (!sentence) { errorMsg.textContent = 'Please enter a sentence!'; return; }
             errorMsg.textContent = '';
             btn.disabled = true;
@@ -384,7 +333,6 @@
             document.getElementById('result-section').style.display = 'none';
             document.getElementById('tree-visual').style.display = 'none';
             treeLoaded = false;
-
             try {
                 const response = await fetch(`${API}/compress`, {
                     method: 'POST',
@@ -394,7 +342,6 @@
                 const data = await response.json();
                 currentSentence = data.original;
                 currentCompressed = data.compressed;
-
                 const originalWords = data.original.split(' ');
                 const compressedWords = data.compressed.toLowerCase().split(' ');
                 const highlighted = originalWords.map(word => {
@@ -404,7 +351,6 @@
                     const border = kept ? '#51cf66' : '#ff6b6b';
                     return `<span style="background:${bg};border:1px solid ${border};padding:2px 5px;border-radius:4px;margin:2px;display:inline-block">${word}</span>`;
                 }).join(' ');
-
                 document.getElementById('original-text').innerHTML = highlighted;
                 document.getElementById('compressed-text').textContent = data.compressed;
                 document.getElementById('original-count').textContent = data.original_word_count + ' words';
@@ -414,21 +360,17 @@
                 document.getElementById('stat-ratio').textContent = Math.round(data.compression_ratio * 100) + '%';
                 document.getElementById('stat-removed').textContent = data.original_word_count - data.compressed_word_count;
                 document.getElementById('level-badge').textContent = currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
-
                 if (data.rouge_scores) {
                     document.getElementById('rouge1').textContent = data.rouge_scores.rouge1;
                     document.getElementById('rouge2').textContent = data.rouge_scores.rouge2;
                     document.getElementById('rougeL').textContent = data.rouge_scores.rougeL;
                 }
-
                 document.getElementById('result-section').style.display = 'block';
                 document.getElementById('tree-btn').textContent = '🌳 Show Syntax Analysis';
                 addToHistory(data.original, data.compressed, currentLevel, data.compression_ratio);
-
             } catch (err) {
                 errorMsg.textContent = 'Could not connect to API. Please wait 30 seconds and try again!';
             }
-
             btn.disabled = false;
             btn.textContent = 'Compress Sentence';
         }
@@ -436,22 +378,18 @@
         async function toggleTree() {
             const treeVisual = document.getElementById('tree-visual');
             const btn = document.getElementById('tree-btn');
-
             if (treeVisual.style.display === 'block') {
                 treeVisual.style.display = 'none';
                 btn.textContent = '🌳 Show Syntax Analysis';
                 return;
             }
-
             if (treeLoaded) {
                 treeVisual.style.display = 'block';
                 btn.textContent = '🌳 Hide Syntax Analysis';
                 return;
             }
-
             btn.disabled = true;
             btn.textContent = 'Loading...';
-
             try {
                 const response = await fetch(`${API}/tree`, {
                     method: 'POST',
@@ -459,11 +397,8 @@
                     body: JSON.stringify({ sentence: currentSentence, level: currentLevel })
                 });
                 const data = await response.json();
-
-                // Build visual word chips
                 let wordsHtml = '';
                 let removedWords = [];
-
                 data.tokens.forEach(token => {
                     const chipClass = token.status === 'kept' ? 'kept' : 'removed';
                     const roleClass = token.status === 'removed' ? 'removed-role' : '';
@@ -472,14 +407,9 @@
                             <div class="word-chip ${chipClass}">${token.text}</div>
                             <div class="word-role ${roleClass}">${token.role}</div>
                         </div>`;
-                    if (token.status === 'removed') {
-                        removedWords.push({ text: token.text, role: token.role });
-                    }
+                    if (token.status === 'removed') removedWords.push({ text: token.text, role: token.role });
                 });
-
                 document.getElementById('tree-words').innerHTML = wordsHtml;
-
-                // Removed words summary
                 if (removedWords.length > 0) {
                     let removedHtml = '<div class="removed-list-title">🗑 Words removed by algorithm:</div>';
                     removedWords.forEach(w => {
@@ -490,26 +420,100 @@
                 } else {
                     document.getElementById('removed-list').style.display = 'none';
                 }
-
                 treeVisual.style.display = 'block';
                 btn.textContent = '🌳 Hide Syntax Analysis';
                 treeLoaded = true;
-
             } catch (err) {
                 alert('Could not load analysis. Try again!');
             }
             btn.disabled = false;
         }
 
+        async function loadComparison() {
+            const btn = document.getElementById('compare-btn');
+            btn.disabled = true;
+            btn.textContent = 'Running evaluation...';
+            try {
+                const response = await fetch(`${API}/evaluate`);
+                const data = await response.json();
+
+                let html = `
+                    <h3 style="font-size:1.1rem;font-weight:600;color:#333;margin-bottom:12px">
+                        ROUGE Score Comparison — ${data.total_sentences} Test Sentences
+                    </h3>
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>System</th>
+                                <th>ROUGE-1 ↑</th>
+                                <th>ROUGE-2 ↑</th>
+                                <th>ROUGE-L ↑</th>
+                                <th>Compression Ratio</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                const systems = Object.entries(data.summary);
+                systems.forEach(([name, scores], i) => {
+                    const rowClass = i === 1 ? 'best' : (i === 0 ? 'worst' : '');
+                    const star = i === 1 ? ' ⭐' : '';
+                    html += `
+                        <tr class="${rowClass}">
+                            <td>${name}${star}</td>
+                            <td>${scores.rouge1}</td>
+                            <td>${scores.rouge2}</td>
+                            <td>${scores.rougeL}</td>
+                            <td>${Math.round(scores.ratio * 100)}%</td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table>
+                    <p style="font-size:0.8rem;color:#888;margin-bottom:24px">
+                        ⭐ Best balance of compression + quality | 🟢 Green = best | 🔴 Red = naive baseline
+                    </p>
+                    <h3 style="font-size:1.1rem;font-weight:600;color:#333;margin-bottom:12px">
+                        Sample Outputs — All 4 Systems
+                    </h3>`;
+
+                data.samples.forEach(s => {
+                    html += `
+                        <div class="sample-card">
+                            <p class="sample-original">📝 ${s.original}</p>
+                            <div class="sample-row">
+                                <span class="sample-label label-baseline">Baseline</span>
+                                <span class="sample-text">${s.baseline}</span>
+                            </div>
+                            <div class="sample-row">
+                                <span class="sample-label label-light">Light</span>
+                                <span class="sample-text">${s.light}</span>
+                            </div>
+                            <div class="sample-row">
+                                <span class="sample-label label-medium">Medium</span>
+                                <span class="sample-text">${s.medium}</span>
+                            </div>
+                            <div class="sample-row">
+                                <span class="sample-label label-heavy">Heavy</span>
+                                <span class="sample-text">${s.heavy}</span>
+                            </div>
+                        </div>`;
+                });
+
+                document.getElementById('compare-results').innerHTML = html;
+            } catch (err) {
+                document.getElementById('compare-results').innerHTML =
+                    '<p style="color:red">Could not connect to API. Please wait and try again!</p>';
+            }
+            btn.disabled = false;
+            btn.textContent = '🔬 Run Evaluation Again';
+        }
+
         async function batchCompress() {
             const input = document.getElementById('batch-input').value.trim();
             const btn = document.getElementById('batch-compress-btn');
             if (!input) { alert('Please enter sentences!'); return; }
-
             const sentences = input.split('\n').filter(s => s.trim());
             btn.disabled = true;
             btn.textContent = 'Compressing...';
-
             try {
                 const response = await fetch(`${API}/batch`, {
                     method: 'POST',
@@ -518,7 +522,6 @@
                 });
                 const data = await response.json();
                 batchResults = data.results;
-
                 let html = `<p style="font-weight:600;margin-bottom:12px">Results: ${data.total} sentences compressed</p>`;
                 data.results.forEach(r => {
                     html += `
